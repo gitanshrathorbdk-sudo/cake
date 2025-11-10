@@ -18,6 +18,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -26,7 +27,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
   const [duration, setDuration] = React.useState(0);
   const [currentTime, setCurrentTime] = React.useState(0);
 
-  // This effect simulates song progress
+  // This effect handles play/pause functionality
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -36,21 +37,25 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
     } else {
       audio.pause();
     }
-  }, [isPlaying, song]);
+  }, [isPlaying, song?.fileUrl]); // Depend on song.fileUrl to correctly handle song changes
 
+  // This effect resets progress when the song changes
   React.useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
-      // Reset progress when song changes
       setCurrentTime(0);
       setProgress(0);
       setDuration(0);
+      // Ensure the new song plays if isPlaying is true
+      if (isPlaying) {
+        audio.play().catch(e => console.error("Playback failed for new song", e));
+      }
     }
-  }, [song]);
+  }, [song?.fileUrl, isPlaying]);
   
   const handleTimeUpdate = () => {
     const audio = audioRef.current;
-    if (audio) {
+    if (audio && !isNaN(audio.duration) && audio.duration > 0) {
         setCurrentTime(audio.currentTime);
         setProgress((audio.currentTime / audio.duration) * 100);
         if (audio.currentTime === audio.duration) {
@@ -68,14 +73,13 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
 
   const handleProgressChange = (value: number[]) => {
     const audio = audioRef.current;
-    if (audio) {
+    if (audio && !isNaN(audio.duration)) {
       const newTime = (value[0] / 100) * audio.duration;
       audio.currentTime = newTime;
       setCurrentTime(newTime);
       setProgress(value[0]);
     }
   };
-
 
   return (
     <footer className="sticky bottom-0 z-10 w-full border-t bg-card/95 backdrop-blur-sm">
@@ -84,73 +88,70 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
         src={song?.fileUrl}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => onSkip('forward')}
       />
-      <div className="container mx-auto grid h-24 grid-cols-3 items-center p-4">
-        <div className="flex items-center gap-4">
-          {song ? (
-            <>
-              <Image
-                src="https://picsum.photos/seed/currentSong/64/64"
-                alt="Album Art"
-                width={56}
-                height={56}
-                className="rounded-md"
-                data-ai-hint="album cover"
-              />
-              <div className="hidden md:block">
-                <p className="font-semibold text-foreground">{song.title}</p>
-                <p className="text-sm text-muted-foreground">{song.artist}</p>
-              </div>
-            </>
-          ) : (
-             <div className="flex items-center gap-4 text-muted-foreground">
-                <div className="grid h-14 w-14 place-items-center rounded-md bg-muted">
-                    <Music className="h-6 w-6" />
+      <div className="container mx-auto flex h-24 flex-col justify-center gap-2 p-4">
+        <div className="flex items-center">
+            <div className="flex w-1/3 items-center gap-4">
+              {song ? (
+                <>
+                  <Image
+                    src="https://picsum.photos/seed/currentSong/64/64"
+                    alt="Album Art"
+                    width={48}
+                    height={48}
+                    className="rounded-md"
+                    data-ai-hint="album cover"
+                  />
+                  <div className="hidden md:block">
+                    <p className="font-semibold text-foreground truncate">{song.title}</p>
+                    <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-4 text-muted-foreground">
+                    <div className="grid h-12 w-12 place-items-center rounded-md bg-muted">
+                        <Music className="h-6 w-6" />
+                    </div>
                 </div>
-                <div className="hidden md:block">
-                    <p className="font-semibold">No song selected</p>
-                    <p className="text-sm">Choose a song to play</p>
-                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSkip('backward')}>
-              <SkipBack className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="default"
-              size="icon"
-              className="h-12 w-12 rounded-full"
-              onClick={onPlayPause}
-              disabled={!song}
-            >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSkip('forward')}>
-              <SkipForward className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="hidden w-full max-w-xs items-center gap-2 text-xs lg:flex">
-             <span>{formatTime(currentTime)}</span>
-             <Slider
-                value={[progress]}
-                onValueChange={handleProgressChange}
-                max={100}
-                step={1}
-                className="w-full"
+            <div className="flex w-1/3 items-center justify-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSkip('backward')}>
+                <SkipBack className="h-5 w-5" />
+                </Button>
+                <Button
+                variant="default"
+                size="icon"
+                className="h-12 w-12 rounded-full"
+                onClick={onPlayPause}
                 disabled={!song}
-              />
-             <span>{formatTime(duration)}</span>
-          </div>
-        </div>
+                >
+                {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSkip('forward')}>
+                <SkipForward className="h-5 w-5" />
+                </Button>
+            </div>
 
-        <div className="flex items-center justify-end">
-          <Button variant="ghost" size="icon">
-            <ListPlus className="h-5 w-5" />
-          </Button>
+            <div className="flex w-1/3 items-center justify-end">
+                <Button variant="ghost" size="icon">
+                    <ListPlus className="h-5 w-5" />
+                </Button>
+            </div>
+        </div>
+        <div className="flex w-full items-center gap-2 text-xs">
+            <span className="w-10 text-right">{formatTime(currentTime)}</span>
+            <Slider
+            value={[progress]}
+            onValueChange={handleProgressChange}
+            max={100}
+            step={1}
+            className="w-full"
+            disabled={!song}
+            />
+            <span className="w-10 text-left">{formatTime(duration)}</span>
         </div>
       </div>
     </footer>
