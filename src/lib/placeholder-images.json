@@ -1,3 +1,76 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "genre-1",
+      "description": "Chillwave",
+      "imageUrl": "https://images.unsplash.com/photo-1569150265639-3286d4af16f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMHN1bnNldHxlbnwwfHx8fDE3NjI3NzI2MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract sunset"
+    },
+    {
+      "id": "genre-2",
+      "description": "Indie Rock",
+      "imageUrl": "https://images.unsplash.com/photo-1662434243640-42988ab42db8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxndWl0YXIlMjBwZWRhbHN8ZW58MHx8fHwxNzYyNzcyNjEyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "guitar pedals"
+    },
+    {
+      "id": "genre-3",
+      "description": "Lofi Hip Hop",
+      "imageUrl": "https://images.unsplash.com/photo-1640276751820-7a295bee77aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb3p5JTIwcm9vbXxlbnwwfHx8fDE3NjI2NjY1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cozy room"
+    },
+    {
+      "id": "genre-4",
+      "description": "Synth-Pop",
+      "imageUrl": "https://images.unsplash.com/photo-1549317336-206569e8475c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxuZW9uJTIwbGlnaHRzfGVufDB8fHx8MTc2MjcyMzY4OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "neon lights"
+    },
+    {
+      "id": "genre-5",
+      "description": "Ambient",
+      "imageUrl": "https://images.unsplash.com/photo-1506452305024-9d3f02d1c9b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtaXN0eSUyMGZvcmVzdHxlbnwwfHx8fDE3NjI2NTU2ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "misty forest"
+    },
+    {
+      "id": "genre-6",
+      "description": "Jazz Fusion",
+      "imageUrl": "https://images.unsplash.com/photo-1698151923964-22149b074f8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2F4b3Bob25lJTIwc2lsaG91ZXR0ZXxlbnwwfHx8fDE3NjI3NzI2MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "saxophone silhouette"
+    },
+    {
+      "id": "genre-7",
+      "description": "Deep House",
+      "imageUrl": "https://images.unsplash.com/photo-1662889603095-c1fa3e07b19d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx1bmRlcndhdGVyJTIwY2x1YnxlbnwwfHx8fDE3NjI3NzI2MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "underwater club"
+    },
+    {
+      "id": "genre-8",
+      "description": "Funk",
+      "imageUrl": "https://images.unsplash.com/photo-1616714109948-c74fe5029a4d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx2aW55bCUyMHJlY29yZHxlbnwwfHx8fDE3NjI3NjgzMjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vinyl record"
+    },
+    {
+      "id": "genre-9",
+      "description": "Classical",
+      "imageUrl": "https://images.unsplash.com/photo-1615414046707-3d7d91938aa4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjb25jZXJ0JTIwaGFsbHxlbnwwfHx8fDE3NjI3NDg2OTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "concert hall"
+    },
+    {
+      "id": "genre-10",
+      "description": "Reggae",
+      "imageUrl": "https://images.unsplash.com/photo-1569918970203-ea053ffda098?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxiZWFjaCUyMGJvbmZpcmV8ZW58MHx8fHwxNzYyNzcyNjEyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "beach bonfire"
+    },
+    {
+      "id": "genre-11",
+      "description": "Post-Rock",
+      "imageUrl": "https://images.unsplash.com/photo-1612441804231-77a36b284856?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtb3VudGFpbiUyMGxhbmRzY2FwZXxlbnwwfHx8fDE3NjI3MDEzMzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mountain landscape"
+    },
+    {
+      "id": "genre-12",
+      "description": "Techno",
+      "imageUrl": "https://images.unsplash.com/photo-1675326570919-946d728e9a25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmdXR1cmlzdGljJTIwY2l0eXxlbnwwfHx8fDE3NjI3NjYzMjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "futuristic city"
+    }
+  ]
 }
