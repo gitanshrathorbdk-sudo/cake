@@ -90,34 +90,46 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => onSkip('forward')}
       />
-      <div className="container mx-auto flex h-24 flex-col justify-center gap-2 p-4">
-        <div className="flex items-center">
-            <div className="flex w-1/3 items-center gap-4">
-              {song ? (
-                <>
-                  <Image
-                    src="https://picsum.photos/seed/currentSong/64/64"
-                    alt="Album Art"
-                    width={48}
-                    height={48}
-                    className="rounded-md"
-                    data-ai-hint="album cover"
-                  />
-                  <div className="hidden md:block">
-                    <p className="font-semibold text-foreground truncate">{song.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-4 text-muted-foreground">
-                    <div className="grid h-12 w-12 place-items-center rounded-md bg-muted">
-                        <Music className="h-6 w-6" />
-                    </div>
+      <div className="container mx-auto flex h-24 items-center justify-between gap-4 p-4">
+        <div className="flex w-1/3 items-center gap-3">
+          {song ? (
+            <>
+              <Image
+                src="https://picsum.photos/seed/currentSong/64/64"
+                alt="Album Art"
+                width={48}
+                height={48}
+                className="rounded-md"
+                data-ai-hint="album cover"
+              />
+              <div className="hidden md:block">
+                <p className="font-semibold text-foreground truncate">{song.title}</p>
+                <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+              </div>
+            </>
+          ) : (
+             <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="grid h-12 w-12 place-items-center rounded-md bg-muted">
+                    <Music className="h-6 w-6" />
                 </div>
-              )}
             </div>
+          )}
+        </div>
 
-            <div className="flex w-1/3 items-center justify-center gap-2">
+        <div className="flex w-full flex-col items-center justify-center gap-2 md:w-1/3">
+            <div className="flex w-full max-w-xs items-center gap-2 text-xs">
+                <span className="w-10 text-right">{formatTime(currentTime)}</span>
+                <Slider
+                    value={[progress]}
+                    onValueChange={handleProgressChange}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                    disabled={!song}
+                />
+                <span className="w-10 text-left">{formatTime(duration)}</span>
+            </div>
+             <div className="flex items-center justify-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSkip('backward')}>
                 <SkipBack className="h-5 w-5" />
                 </Button>
@@ -134,24 +146,12 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
                 <SkipForward className="h-5 w-5" />
                 </Button>
             </div>
-
-            <div className="flex w-1/3 items-center justify-end">
-                <Button variant="ghost" size="icon">
-                    <ListPlus className="h-5 w-5" />
-                </Button>
-            </div>
         </div>
-        <div className="flex w-full items-center gap-2 text-xs">
-            <span className="w-10 text-right">{formatTime(currentTime)}</span>
-            <Slider
-            value={[progress]}
-            onValueChange={handleProgressChange}
-            max={100}
-            step={1}
-            className="w-full"
-            disabled={!song}
-            />
-            <span className="w-10 text-left">{formatTime(duration)}</span>
+
+        <div className="flex w-1/3 items-center justify-end">
+            <Button variant="ghost" size="icon">
+                <ListPlus className="h-5 w-5" />
+            </Button>
         </div>
       </div>
     </footer>
