@@ -23,14 +23,16 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Wand2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Song } from '@/lib/types';
 import { Textarea } from './ui/textarea';
+import { suggestCharacteristics } from '@/ai/flows/suggest-characteristics-flow';
 
 const songSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   artist: z.string().min(1, 'Artist is required'),
+  characteristics: z.string().optional(),
   file: z
     .any()
     .refine((files) => files?.length == 1, 'File is required.'),
@@ -49,11 +51,12 @@ type UploadMusicDialogProps = {
 
 export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }: UploadMusicDialogProps) {
   const { toast } = useToast();
+  const [generatingIndex, setGeneratingIndex] = React.useState<number | null>(null);
 
   const form = useForm<z.infer<typeof uploadFormSchema>>({
     resolver: zodResolver(uploadFormSchema),
     defaultValues: {
-      songs: [{ title: '', artist: '' }],
+      songs: [{ title: '', artist: '', characteristics: '' }],
     },
   });
 
@@ -62,13 +65,41 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     name: 'songs',
   });
 
+  async function handleGenerateCharacteristics(index: number) {
+    setGeneratingIndex(index);
+    const song = form.getValues(`songs.${index}`);
+    if (!song.title || !song.artist) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a title and artist first.',
+      });
+      setGeneratingIndex(null);
+      return;
+    }
+    try {
+      const result = await suggestCharacteristics({ title: song.title, artist: song.artist });
+      form.setValue(`songs.${index}.characteristics`, result.join(', '));
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'AI Error',
+        description: 'Could not generate characteristics.',
+      });
+    } finally {
+      setGeneratingIndex(null);
+    }
+  }
+
+
   function onSubmit(values: z.infer<typeof uploadFormSchema>) {
     console.log(values);
     
     const newSongs: Song[] = values.songs.map(s => ({
         title: s.title,
         artist: s.artist,
-        characteristics: [],
+        characteristics: s.characteristics ? s.characteristics.split(',').map(c => c.trim()).filter(c => c) : [],
         fileUrl: URL.createObjectURL(s.file[0]),
     }));
 
@@ -84,7 +115,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   React.useEffect(() => {
     if (!open) {
       form.reset({
-        songs: [{ title: '', artist: '' }],
+        songs: [{ title: '', artist: '', characteristics: '' }],
       });
     }
   }, [open, form]);
@@ -94,7 +125,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
         <DialogHeader>
           <DialogTitle>Upload From Device</DialogTitle>
           <DialogDescription>
-            Add songs to your Harmonica library.
+            Add songs to your Harmonica library. Use the AI to generate characteristics.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -149,6 +180,38 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                         )}
                       />
                    </div>
+                   <FormField
+                      control={form.control}
+                      name={`songs.${index}.characteristics`}
+                      render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center justify-between">
+                                <span>Characteristics</span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleGenerateCharacteristics(index)}
+                                    disabled={generatingIndex === index}
+                                >
+                                    {generatingIndex === index ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Wand2 className="mr-2 h-4 w-4" />
+                                    )}
+                                    Generate with AI
+                                </Button>
+                            </FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="e.g. upbeat, indie, summer"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                    {fields.length > 1 && (
                      <Button
                        type="button"
@@ -166,7 +229,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
             <Button
               type="button"
               variant="outline"
-              onClick={() => append({ title: '', artist: '' })}
+              onClick={() => append({ title: '', artist: '', characteristics: '' })}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Another Song

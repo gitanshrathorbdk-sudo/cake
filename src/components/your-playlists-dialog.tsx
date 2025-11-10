@@ -39,9 +39,9 @@ export function YourPlaylistsDialog({ open, onOpenChange, playlists }: YourPlayl
                             <p className="text-sm text-muted-foreground">{playlist.songs.length} songs</p>
                         </div>
                     </div>
-                    <Badge variant={'secondary'}>
-                        <User className="mr-1 h-3 w-3" />
-                        Made by You
+                    <Badge variant={playlist.type === 'ai' ? 'default' : 'secondary'}>
+                        {playlist.type === 'ai' ? <BrainCircuit className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />}
+                        {playlist.type === 'ai' ? 'By AI' : 'By You'}
                     </Badge>
                 </div>
             )) : (
