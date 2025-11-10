@@ -11,11 +11,11 @@ const SuggestCharacteristicsInputSchema = z.object({
   artist: z.string().describe('The artist of the song.'),
 });
 
-export type SuggestCharacteristicsInput = z.infer<typeof SuggestCharacteristicsInputSchema>;
+type SuggestCharacteristicsInput = z.infer<typeof SuggestCharacteristicsInputSchema>;
 
 const SuggestCharacteristicsOutputSchema = z.array(z.string()).describe('A list of 10 descriptive characteristics for the song.');
 
-export type SuggestCharacteristicsOutput = z.infer<typeof SuggestCharacteristicsOutputSchema>;
+type SuggestCharacteristicsOutput = z.infer<typeof SuggestCharacteristicsOutputSchema>;
 
 
 const prompt = ai.definePrompt({

@@ -18,7 +18,7 @@ const GeneratePlaylistInputSchema = z.object({
   count: z.number().describe('The desired number of songs in the playlist.'),
 });
 
-export type GeneratePlaylistInput = z.infer<typeof GeneratePlaylistInputSchema>;
+type GeneratePlaylistInput = z.infer<typeof GeneratePlaylistInputSchema>;
 
 const PlaylistSongSchema = z.object({
     title: z.string(),
@@ -30,7 +30,7 @@ const GeneratePlaylistOutputSchema = z.object({
   songs: z.array(PlaylistSongSchema),
 });
 
-export type GeneratePlaylistOutput = z.infer<typeof GeneratePlaylistOutputSchema>;
+type GeneratePlaylistOutput = z.infer<typeof GeneratePlaylistOutputSchema>;
 
 
 const prompt = ai.definePrompt({
