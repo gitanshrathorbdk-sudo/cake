@@ -102,6 +102,7 @@ export default function Home() {
             onPlaylistCreated={handlePlaylistCreated} 
             songs={songs}
             timeListenedInSeconds={timeListenedInSeconds} 
+            currentSong={currentSong}
           />
         </div>
       </main>

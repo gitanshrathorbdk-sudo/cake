@@ -18,9 +18,10 @@ type DashboardStatsProps = {
     onPlaylistCreated: (playlist: Playlist) => void;
     songs: Song[];
     timeListenedInSeconds: number;
+    currentSong: Song | null;
 };
 
-export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListenedInSeconds }: DashboardStatsProps) {
+export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListenedInSeconds, currentSong }: DashboardStatsProps) {
   const [isPlaylistsDialogOpen, setPlaylistsDialogOpen] = React.useState(false);
   
   const formatTimeListened = (totalSeconds: number) => {
@@ -40,12 +41,15 @@ export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListen
     return display.trim();
   };
 
+  const mostListenedValue = currentSong ? `${currentSong.title} - ${currentSong.artist}` : 'No songs yet';
+  const mostListenedDescription = currentSong ? 'Currently playing' : 'Play a song to start';
+
   const stats = [
     {
       title: 'Most Listened',
-      value: 'Midnight City - M83',
+      value: mostListenedValue,
       icon: <Music className="h-6 w-6 text-primary" />,
-      description: 'Your top track this month',
+      description: mostListenedDescription,
     },
     {
       title: 'Your Playlists',
@@ -80,7 +84,7 @@ export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListen
               {stat.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-bold truncate">{stat.value}</div>
               <p className="text-xs text-muted-foreground">{stat.description}</p>
             </CardContent>
           </Card>
