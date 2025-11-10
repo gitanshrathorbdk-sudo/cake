@@ -11,15 +11,11 @@ import { UploadMusicDialog } from './upload-music-dialog';
 interface YourMusicProps {
   songs: Song[];
   onPlaySong: (song: Song) => void;
+  onSongsAdded: (songs: Song[]) => void;
 }
 
-export function YourMusic({ songs, onPlaySong }: YourMusicProps) {
+export function YourMusic({ songs, onPlaySong, onSongsAdded }: YourMusicProps) {
     const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
-
-    const handleSongsAdded = (newSongs: Song[]) => {
-        // This component doesn't own the state, so this is just for closing the dialog.
-        // The actual state update happens in the parent.
-    };
     
   return (
     <section>
@@ -77,7 +73,7 @@ export function YourMusic({ songs, onPlaySong }: YourMusicProps) {
                <UploadMusicDialog
                     open={isUploadDialogOpen}
                     onOpenChange={setUploadDialogOpen}
-                    onSongsAdded={handleSongsAdded}
+                    onSongsAdded={onSongsAdded}
                 >
                     <Button>
                         <Upload className="mr-2 h-4 w-4" />

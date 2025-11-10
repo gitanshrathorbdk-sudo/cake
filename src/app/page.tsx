@@ -17,7 +17,7 @@ export default function Home() {
   const handleSongsAdded = (newSongs: Song[]) => {
     const allSongs = [...songs, ...newSongs];
     setSongs(allSongs);
-    if (!currentSong) {
+    if (!currentSong && allSongs.length > 0) {
       setCurrentSong(allSongs[0]);
     }
   };
@@ -59,7 +59,7 @@ export default function Home() {
       />
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
-          <YourMusic songs={songs} onPlaySong={handlePlaySong} />
+          <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} />
           <DashboardStats />
         </div>
       </main>
