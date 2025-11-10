@@ -14,6 +14,20 @@ export default function Home() {
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
+  const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setTimeListenedInSeconds(prevTime => prevTime + 1);
+      }, 1000);
+    }
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isPlaying]);
+
 
   React.useEffect(() => {
     // Clean up object URLs to avoid memory leaks
@@ -83,7 +97,12 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} />
-          <DashboardStats playlists={playlists} onPlaylistCreated={handlePlaylistCreated} songs={songs} />
+          <DashboardStats 
+            playlists={playlists} 
+            onPlaylistCreated={handlePlaylistCreated} 
+            songs={songs}
+            timeListenedInSeconds={timeListenedInSeconds} 
+          />
         </div>
       </main>
       <MusicControlBar 

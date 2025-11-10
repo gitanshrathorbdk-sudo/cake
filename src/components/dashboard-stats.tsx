@@ -18,10 +18,29 @@ type DashboardStatsProps = {
     playlists: Playlist[];
     onPlaylistCreated: (playlist: Playlist) => void;
     songs: Song[];
+    timeListenedInSeconds: number;
 };
 
-export function DashboardStats({ playlists, onPlaylistCreated, songs }: DashboardStatsProps) {
+export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListenedInSeconds }: DashboardStatsProps) {
   const [isPlaylistsDialogOpen, setPlaylistsDialogOpen] = React.useState(false);
+  
+  const formatTimeListened = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    let display = '';
+    if (hours > 0) {
+        display += `${hours}h `;
+    }
+    if (minutes > 0 || hours > 0) {
+        display += `${minutes}m `;
+    }
+    display += `${seconds}s`;
+
+    return display.trim();
+  };
+
   const stats = [
     {
       title: 'Most Listened',
@@ -38,9 +57,9 @@ export function DashboardStats({ playlists, onPlaylistCreated, songs }: Dashboar
     },
     {
       title: 'Time Listened',
-      value: '27 hours',
+      value: formatTimeListened(timeListenedInSeconds),
       icon: <Clock className="h-6 w-6 text-primary" />,
-      description: 'This week',
+      description: 'This session',
     },
     {
       title: 'Current Mood',
