@@ -20,6 +20,13 @@
       "artist": "The Morning Larks",
       "fileUrl": "/music/acoustic-sunrise.mp3",
       "characteristics": ["acoustic", "folk", "calm"]
+    },
+    {
+      "id": 1004,
+      "title": "295",
+      "artist": "Sidhu Moose Wala",
+      "fileUrl": "/music/295.mp3",
+      "characteristics": ["punjabi", "hip-hop"]
     }
   ]
 }
