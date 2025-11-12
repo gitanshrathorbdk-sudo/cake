@@ -86,7 +86,7 @@ export default function Home() {
   };
 
   const handlePlaySong = (song: Song) => {
-    if (currentSong?.id === song.id && currentSong?.fileUrl === song.fileUrl) {
+    if ((currentSong?.id && currentSong.id === song.id) || currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
     } else {
         setCurrentSong(song);

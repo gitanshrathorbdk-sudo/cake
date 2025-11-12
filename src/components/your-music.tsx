@@ -9,6 +9,7 @@ import * as React from 'react';
 import { UploadMusicDialog } from './upload-music-dialog';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
+import { ScrollArea } from './ui/scroll-area';
 
 interface YourMusicProps {
   songs: Song[];
@@ -47,50 +48,52 @@ export function YourMusic({ songs, onPlaySong, onSongsAdded, isLoading }: YourMu
               </TableBody>
             </Table>
           ) : songs.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className='w-12'></TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead className="hidden md:table-cell">Artist</TableHead>
-                  <TableHead className="hidden lg:table-cell">Characteristics</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {songs.map((song) => (
-                  <TableRow key={song.id} className="group cursor-pointer" onClick={() => onPlaySong(song)}>
-                    <TableCell>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onPlaySong(song);
-                            }}
-                        >
-                            <Play className="h-5 w-5 fill-current" />
-                        </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Music className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{song.title}</p>
-                          <p className="text-sm text-muted-foreground md:hidden">{song.artist}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{song.artist}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {song.characteristics?.map(char => <Badge key={char} variant="secondary">{char}</Badge>)}
-                      </div>
-                    </TableCell>
+            <ScrollArea className="h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead className="hidden md:table-cell">Artist</TableHead>
+                    <TableHead className="hidden lg:table-cell">Characteristics</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {songs.map((song) => (
+                    <TableRow key={song.id || song.fileUrl} className="group cursor-pointer" onClick={() => onPlaySong(song)}>
+                      <TableCell>
+                          <Button
+                              variant="ghost"
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPlaySong(song);
+                              }}
+                          >
+                              <Play className="h-5 w-5 fill-current" />
+                          </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Music className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{song.title}</p>
+                            <p className="text-sm text-muted-foreground md:hidden">{song.artist}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{song.artist}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {song.characteristics?.map(char => <Badge key={char} variant="secondary">{char}</Badge>)}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
               <Music className="h-16 w-16 text-muted-foreground" />
