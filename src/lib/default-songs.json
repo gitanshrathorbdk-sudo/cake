@@ -27,6 +27,20 @@
       "artist": "Sidhu Moose Wala",
       "fileUrl": "/music/295.mp3",
       "characteristics": ["punjabi", "hip-hop"]
+    },
+    {
+      "id": 1005,
+      "title": "Your New Song Title",
+      "artist": "The Artist Name",
+      "fileUrl": "/music/your-song-filename.mp3",
+      "characteristics": ["genre", "mood", "style"]
+    },
+    {
+      "id": 1006,
+      "title": "Another Great Track",
+      "artist": "Another Artist",
+      "fileUrl": "/music/another-track.mp3",
+      "characteristics": ["upbeat", "electronic", "dance"]
     }
   ]
 }
