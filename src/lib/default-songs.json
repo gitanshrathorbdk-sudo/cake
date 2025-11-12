@@ -30,17 +30,31 @@
     },
     {
       "id": 1005,
-      "title": "Your New Song Title",
-      "artist": "The Artist Name",
-      "fileUrl": "/music/your-song-filename.mp3",
-      "characteristics": ["genre", "mood", "style"]
+      "title": "Aap is dhoop me",
+      "artist": "",
+      "fileUrl": "/music/AID.mp3",
+      "characteristics": ["soundtrack", "calm"]
     },
     {
       "id": 1006,
-      "title": "Another Great Track",
-      "artist": "Another Artist",
-      "fileUrl": "/music/another-track.mp3",
-      "characteristics": ["upbeat", "electronic", "dance"]
+      "title": "TAY HAI",
+      "artist": "",
+      "fileUrl": "/music/TH.mp3",
+      "characteristics": ["soundtrack", "romantic"]
+    },
+    {
+      "id": 1007,
+      "title": "Tere Ishq me",
+      "artist": "Artist Name",
+      "fileUrl": "/music/TI.mp3",
+      "characteristics": ["romantic", "ballad"]
+    },
+    {
+      "id": 1008,
+      "title": "parno",
+      "artist": "Artist Name",
+      "fileUrl": "/music/PN.mp3",
+      "characteristics": ["folk", "upbeat"]
     }
   ]
 }
