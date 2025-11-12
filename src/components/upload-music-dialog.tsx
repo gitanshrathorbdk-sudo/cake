@@ -35,8 +35,17 @@ const songSchema = z.object({
   artist: z.string().min(1, 'Artist is required'),
   characteristics: z.string().optional(),
   file: z
-    .instanceof(FileList)
-    .refine((files) => files?.length == 1, 'File is required.'),
+    .any()
+    .refine(
+      (files) =>
+        typeof window === 'undefined' || (files instanceof FileList && files.length > 0),
+      'File is required.'
+    )
+    .refine(
+      (files) =>
+        typeof window === 'undefined' || (files instanceof FileList && files.length === 1),
+      'Only one file is allowed.'
+    ),
 });
 
 const uploadFormSchema = z.object({
