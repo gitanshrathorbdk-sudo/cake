@@ -233,7 +233,7 @@ export function CreatePlaylistDialog({
                   )}
                 />
 
-                <ScrollArea className="max-h-[30vh] h-full pr-2">
+                <ScrollArea className="h-[400px] pr-2">
                   <div className="space-y-2">
                     {songs.length > 0 ? (
                       songs.map((song) => (
