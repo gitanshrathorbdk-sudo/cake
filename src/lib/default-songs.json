@@ -1,0 +1,25 @@
+{
+  "defaultSongs": [
+    {
+      "id": 1001,
+      "title": "Ambient Dreams",
+      "artist": "Synthwave Cafe",
+      "fileUrl": "/music/ambient-dreams.mp3",
+      "characteristics": ["ambient", "chill", "instrumental"]
+    },
+    {
+      "id": 1002,
+      "title": "Midnight Funk",
+      "artist": "Groove Masters",
+      "fileUrl": "/music/midnight-funk.mp3",
+      "characteristics": ["funk", "upbeat", "retro"]
+    },
+    {
+      "id": 1003,
+      "title": "Acoustic Sunrise",
+      "artist": "The Morning Larks",
+      "fileUrl": "/music/acoustic-sunrise.mp3",
+      "characteristics": ["acoustic", "folk", "calm"]
+    }
+  ]
+}

@@ -6,7 +6,7 @@ export type Song = {
   artist: string;
   fileUrl: string;
   characteristics: string[];
-  file: File;
+  file?: File; // Optional: only present for user-uploaded songs
 };
 
 export type Playlist = {

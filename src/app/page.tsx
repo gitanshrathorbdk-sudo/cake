@@ -8,6 +8,7 @@ import { DashboardStats } from '@/components/dashboard-stats';
 import type { Song, Playlist } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
+import defaultSongsData from '@/lib/default-songs.json';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
@@ -19,21 +20,31 @@ export default function Home() {
   const [isDbLoading, setIsDbLoading] = React.useState(true);
 
   React.useEffect(() => {
-    async function loadSongsFromDb() {
+    async function loadSongs() {
       try {
+        // Load default songs from JSON
+        const defaultSongs: Song[] = defaultSongsData.defaultSongs;
+
+        // Load user-uploaded songs from IndexedDB
         const dbSongs = await db.songs.toArray();
         const songsWithUrls = dbSongs.map(s => ({
           ...s,
           fileUrl: URL.createObjectURL(s.file)
         }));
-        setSongs(songsWithUrls);
+
+        // Combine both lists, avoiding duplicates if a default song was somehow uploaded
+        const combinedSongs = [...defaultSongs, ...songsWithUrls];
+        const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
+        
+        setSongs(uniqueSongs);
+
       } catch (e) {
-        console.error("Failed to load songs from database", e);
+        console.error("Failed to load songs", e);
       } finally {
         setIsDbLoading(false);
       }
     }
-    loadSongsFromDb();
+    loadSongs();
   }, []);
 
   React.useEffect(() => {
@@ -53,7 +64,8 @@ export default function Home() {
     // Clean up object URLs to avoid memory leaks
     return () => {
       songs.forEach(song => {
-        if (song.fileUrl) {
+        // Only revoke URLs for blob files created from IndexedDB
+        if (song.file) {
           URL.revokeObjectURL(song.fileUrl);
         }
       });
@@ -62,9 +74,10 @@ export default function Home() {
 
   const handleSongsAdded = (newSongs: Song[]) => {
     const allSongs = [...songs, ...newSongs];
-    setSongs(allSongs);
-    if (!currentSong && allSongs.length > 0) {
-      setCurrentSong(allSongs[0]);
+     const uniqueSongs = Array.from(new Map(allSongs.map(s => [s.title + s.artist, s])).values());
+    setSongs(uniqueSongs);
+    if (!currentSong && uniqueSongs.length > 0) {
+      setCurrentSong(uniqueSongs[0]);
     }
   };
   
@@ -73,7 +86,7 @@ export default function Home() {
   };
 
   const handlePlaySong = (song: Song) => {
-    if (currentSong?.id === song.id) {
+    if (currentSong?.id === song.id && currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
     } else {
         setCurrentSong(song);
@@ -90,7 +103,7 @@ export default function Home() {
   const handleSkip = (direction: 'forward' | 'backward') => {
     if (!currentSong || songs.length === 0) return;
 
-    const currentIndex = songs.findIndex(s => s.id === currentSong.id);
+    const currentIndex = songs.findIndex(s => (s.id && s.id === currentSong.id) || (s.fileUrl === currentSong.fileUrl));
     if (currentIndex === -1) {
         if (songs.length > 0) setCurrentSong(songs[0]);
         return;
