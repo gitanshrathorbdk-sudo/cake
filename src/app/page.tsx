@@ -73,12 +73,14 @@ export default function Home() {
   }, [songs]);
 
   const handleSongsAdded = (newSongs: Song[]) => {
-    const allSongs = [...songs, ...newSongs];
-     const uniqueSongs = Array.from(new Map(allSongs.map(s => [s.title + s.artist, s])).values());
-    setSongs(uniqueSongs);
-    if (!currentSong && uniqueSongs.length > 0) {
-      setCurrentSong(uniqueSongs[0]);
-    }
+    setSongs(prevSongs => {
+      const allSongs = [...prevSongs, ...newSongs];
+      const uniqueSongs = Array.from(new Map(allSongs.map(s => [s.title + s.artist, s])).values());
+      if (!currentSong && uniqueSongs.length > 0) {
+        setCurrentSong(uniqueSongs[0]);
+      }
+      return uniqueSongs;
+    });
   };
   
   const handlePlaylistCreated = (newPlaylist: Playlist) => {
