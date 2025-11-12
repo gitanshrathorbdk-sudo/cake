@@ -27,32 +27,43 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
   const [duration, setDuration] = React.useState(0);
   const [currentTime, setCurrentTime] = React.useState(0);
 
-  // This effect handles play/pause functionality
+  // Effect to manage the audio source
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (audio && song) {
+      audio.src = song.fileUrl;
+      audio.load(); // Load the new source
+      if (isPlaying) {
+        // Attempt to play, but catch errors
+        audio.play().catch(e => console.error("Playback failed for new song", e));
+      }
+    } else if (audio) {
+      audio.pause();
+      audio.src = '';
+    }
+  }, [song?.fileUrl, song?.id]); // Note dependency on fileUrl and id
+
+  // Effect to manage play/pause state
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
   
-    if (isPlaying) {
-      audio.play().catch(e => console.error("Playback failed", e));
+    if (isPlaying && audio.src) {
+       // Only play if there is a source and we are in a playing state
+       const playPromise = audio.play();
+       if (playPromise !== undefined) {
+           playPromise.catch(error => {
+               // Autoplay was prevented.
+               console.error("Audio playback was prevented:", error);
+               // You might want to update the UI state to reflect that it's not playing
+               // onPlayPause(); // This could cause a loop if not handled carefully
+           });
+       }
     } else {
       audio.pause();
     }
-  }, [isPlaying, song?.id]); // Depend on song.id to correctly handle song changes
+  }, [isPlaying]);
 
-  // This effect resets progress when the song changes
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      setCurrentTime(0);
-      setProgress(0);
-      setDuration(0);
-      // Ensure the new song plays if isPlaying is true
-      if (isPlaying) {
-        audio.play().catch(e => console.error("Playback failed for new song", e));
-      }
-    }
-  }, [song?.id, isPlaying]);
-  
   const handleTimeUpdate = () => {
     const audio = audioRef.current;
     if (audio && !isNaN(audio.duration) && audio.duration > 0) {
@@ -85,10 +96,10 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
     <footer className="sticky bottom-0 z-10 w-full border-t bg-card/95 backdrop-blur-sm">
       <audio
         ref={audioRef}
-        src={song?.fileUrl}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => onSkip('forward')}
+        // Remove src from here; it's managed by the useEffect
       />
       <div className="container mx-auto flex h-24 items-center justify-between gap-4 p-4">
         <div className="flex w-1/3 items-center gap-3">
