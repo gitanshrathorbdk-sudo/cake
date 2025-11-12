@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Wand2, Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Song } from '@/lib/types';
@@ -54,10 +55,6 @@ const uploadFormSchema = z.object({
   songs: z.array(songSchema).min(1),
 });
 
-const youtubeImportSchema = z.object({
-  url: z.string().url({ message: 'Please enter a valid YouTube URL.' }),
-});
-
 type UploadMusicDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -69,18 +66,12 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
   const { toast } = useToast();
   const [generatingIndex, setGeneratingIndex] = React.useState<number | null>(null);
   const [isImporting, setIsImporting] = React.useState(false);
+  const [youtubeUrl, setYoutubeUrl] = React.useState('');
 
   const form = useForm<z.infer<typeof uploadFormSchema>>({
     resolver: zodResolver(uploadFormSchema),
     defaultValues: {
       songs: [{ title: '', artist: '', characteristics: '', file: undefined }],
-    },
-  });
-
-  const youtubeForm = useForm<z.infer<typeof youtubeImportSchema>>({
-    resolver: zodResolver(youtubeImportSchema),
-    defaultValues: {
-      url: '',
     },
   });
 
@@ -151,7 +142,16 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     }
   }
 
-  async function onYoutubeSubmit(values: z.infer<typeof youtubeImportSchema>) {
+  async function onYoutubeSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!youtubeUrl) {
+        toast({
+            variant: "destructive",
+            title: "Invalid URL",
+            description: "Please enter a YouTube URL."
+        });
+        return;
+    }
     setIsImporting(true);
     toast({
         title: "Importing from YouTube...",
@@ -159,9 +159,8 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     });
 
     try {
-        const result = await getYouTubeSong(values.url);
+        const result = await getYouTubeSong(youtubeUrl);
 
-        // Convert base64 back to a blob/file
         const byteCharacters = atob(result.audioBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -211,9 +210,9 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
       form.reset({
         songs: [{ title: '', artist: '', characteristics: '', file: undefined }],
       });
-      youtubeForm.reset({ url: '' });
+      setYoutubeUrl('');
     }
-  }, [open, form, youtubeForm]);
+  }, [open, form]);
   
   const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -359,29 +358,23 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                 </Form>
             </TabsContent>
             <TabsContent value="youtube">
-                <Form {...youtubeForm}>
-                    <form onSubmit={youtubeForm.handleSubmit(onYoutubeSubmit)} className="space-y-6 pt-4">
-                        <FormField
-                            control={youtubeForm.control}
-                            name="url"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>YouTube URL</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+                <form onSubmit={onYoutubeSubmit} className="space-y-6 pt-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="youtube-url">YouTube URL</Label>
+                        <Input 
+                            id="youtube-url"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={youtubeUrl}
+                            onChange={(e) => setYoutubeUrl(e.target.value)}
                         />
-                        <DialogFooter>
-                            <Button type="submit" disabled={isImporting}>
-                                {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                                Import Song
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                    </div>
+                    <DialogFooter>
+                        <Button type="submit" disabled={isImporting}>
+                            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                            Import Song
+                        </Button>
+                    </DialogFooter>
+                </form>
             </TabsContent>
         </Tabs>
       </DialogContent>
