@@ -9,6 +9,7 @@ import type { Song, Playlist } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
@@ -18,6 +19,7 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
   const [isDbLoading, setIsDbLoading] = React.useState(true);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     async function loadSongs() {
@@ -87,6 +89,30 @@ export default function Home() {
     setPlaylists(prev => [...prev, newPlaylist]);
   };
 
+  const handleAddToPlaylist = (playlistName: string, song: Song) => {
+    setPlaylists(prevPlaylists => {
+      return prevPlaylists.map(p => {
+        if (p.name === playlistName) {
+          // Avoid adding duplicate songs
+          if (p.songs.some(s => s.id ? s.id === song.id : s.fileUrl === song.fileUrl)) {
+             toast({
+              variant: 'destructive',
+              title: 'Already in playlist',
+              description: `"${song.title}" is already in "${playlistName}".`,
+            });
+            return p;
+          }
+          toast({
+            title: 'Song Added',
+            description: `"${song.title}" has been added to "${playlistName}".`,
+          });
+          return { ...p, songs: [...p.songs, song] };
+        }
+        return p;
+      });
+    });
+  };
+
   const handlePlaySong = (song: Song) => {
     if ((currentSong?.id && currentSong.id === song.id) || currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
@@ -146,6 +172,8 @@ export default function Home() {
         isPlaying={isPlaying} 
         onPlayPause={handlePlayPause}
         onSkip={handleSkip}
+        playlists={playlists}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </div>
   );

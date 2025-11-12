@@ -1,19 +1,22 @@
 'use client';
 import * as React from 'react';
-import { SkipBack, Play, Pause, SkipForward, ListPlus, Music } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
-import type { Song } from '@/lib/types';
+import type { Playlist, Song } from '@/lib/types';
+import { AddToPlaylistMenu } from './add-to-playlist-menu';
 
 interface MusicControlBarProps {
     song: Song | null;
     isPlaying: boolean;
     onPlayPause: () => void;
     onSkip: (direction: 'forward' | 'backward') => void;
+    playlists: Playlist[];
+    onAddToPlaylist: (playlistName: string, song: Song) => void;
 }
 
-export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicControlBarProps) {
+export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlists, onAddToPlaylist }: MusicControlBarProps) {
   const [progress, setProgress] = React.useState(0);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
@@ -160,9 +163,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip }: MusicC
         </div>
 
         <div className="flex w-1/3 items-center justify-end">
-            <Button variant="ghost" size="icon">
-                <ListPlus className="h-5 w-5" />
-            </Button>
+            <AddToPlaylistMenu playlists={playlists} currentSong={song} onAddToPlaylist={onAddToPlaylist} />
         </div>
       </div>
     </footer>
