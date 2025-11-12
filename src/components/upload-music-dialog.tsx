@@ -142,68 +142,66 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     }
   }
 
-  async function onYoutubeSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const handleYoutubeImport = async () => {
     if (!youtubeUrl) {
-        toast({
-            variant: "destructive",
-            title: "Invalid URL",
-            description: "Please enter a YouTube URL."
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Invalid URL',
+        description: 'Please enter a YouTube URL.',
+      });
+      return;
     }
     setIsImporting(true);
     toast({
-        title: "Importing from YouTube...",
-        description: "This may take a moment. Please wait."
+      title: 'Importing from YouTube...',
+      description: 'This may take a moment. Please wait.',
     });
 
     try {
-        const result = await getYouTubeSong(youtubeUrl);
+      const result = await getYouTubeSong(youtubeUrl);
 
-        const byteCharacters = atob(result.audioBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: result.mimeType });
-        const file = new File([blob], `${result.title}.mp3`, { type: result.mimeType });
+      const byteCharacters = atob(result.audioBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: result.mimeType });
+      const file = new File([blob], `${result.title}.mp3`, { type: result.mimeType });
 
-        const songToSave = {
-            title: result.title,
-            artist: result.artist,
-            characteristics: ['youtube', 'import'],
-            file: file,
-        };
-        
-        const addedId = await db.songs.add(songToSave);
-        
-        const newSong: Song = {
-            ...songToSave,
-            id: addedId as number,
-            fileUrl: URL.createObjectURL(file),
-        };
-        
-        onSongsAdded([newSong]);
+      const songToSave = {
+        title: result.title,
+        artist: result.artist,
+        characteristics: ['youtube', 'import'],
+        file: file,
+      };
 
-        toast({
-            title: "Song Imported!",
-            description: `"${result.title}" has been added to your library.`
-        });
-        onOpenChange(false);
+      const addedId = await db.songs.add(songToSave);
 
+      const newSong: Song = {
+        ...songToSave,
+        id: addedId as number,
+        fileUrl: URL.createObjectURL(file),
+      };
+
+      onSongsAdded([newSong]);
+
+      toast({
+        title: 'Song Imported!',
+        description: `"${result.title}" has been added to your library.`,
+      });
+      onOpenChange(false);
     } catch (error: any) {
-        console.error("YouTube import failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Import Failed",
-            description: error.message || "An unexpected error occurred during import."
-        });
+      console.error('YouTube import failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Import Failed',
+        description: error.message || 'An unexpected error occurred during import.',
+      });
     } finally {
-        setIsImporting(false);
+      setIsImporting(false);
     }
-  }
+  };
   
   React.useEffect(() => {
     if (!open) {
@@ -358,7 +356,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                 </Form>
             </TabsContent>
             <TabsContent value="youtube">
-                <form onSubmit={onYoutubeSubmit} className="space-y-6 pt-4">
+                <div className="space-y-6 pt-4">
                     <div className="space-y-2">
                         <Label htmlFor="youtube-url">YouTube URL</Label>
                         <Input 
@@ -369,12 +367,12 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                         />
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={isImporting}>
+                        <Button type="button" onClick={handleYoutubeImport} disabled={isImporting}>
                             {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                             Import Song
                         </Button>
                     </DialogFooter>
-                </form>
+                </div>
             </TabsContent>
         </Tabs>
       </DialogContent>
