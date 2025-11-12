@@ -1,6 +1,6 @@
 'use client';
 
-import { Music, Play, Upload } from 'lucide-react';
+import { Music, Play, Search, Upload } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { UploadMusicDialog } from './upload-music-dialog';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { ScrollArea } from './ui/scroll-area';
+import { Input } from './ui/input';
 
 interface YourMusicProps {
   songs: Song[];
@@ -20,10 +21,27 @@ interface YourMusicProps {
 
 export function YourMusic({ songs, onPlaySong, onSongsAdded, isLoading }: YourMusicProps) {
     const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
+    const [searchQuery, setSearchQuery] = React.useState('');
+
+    const filteredSongs = songs.filter(song => 
+        song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        song.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <section>
-      <h2 className="mb-4 text-3xl font-bold tracking-tight">Your Music</h2>
+       <div className="flex items-center justify-between mb-4">
+        <h2 className="text-3xl font-bold tracking-tight">Your Music</h2>
+        <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+                placeholder="Search by title or artist..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
+        </div>
+      </div>
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -59,7 +77,7 @@ export function YourMusic({ songs, onPlaySong, onSongsAdded, isLoading }: YourMu
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {songs.map((song) => (
+                  {filteredSongs.map((song) => (
                     <TableRow key={song.id || song.fileUrl} className="group cursor-pointer" onClick={() => onPlaySong(song)}>
                       <TableCell>
                           <Button
