@@ -127,7 +127,6 @@ export function CreatePlaylistDialog({
     try {
       const availableSongs = songs.map(s => ({ title: s.title, artist: s.artist, characteristics: s.characteristics.join(', ') }));
 
-      // The return type of generatePlaylist is a promise of the output, not an object with an output property.
       const result = await generatePlaylist({
         availableSongs: availableSongs,
         prompt: values.prompt,
