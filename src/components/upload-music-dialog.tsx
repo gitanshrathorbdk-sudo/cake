@@ -92,8 +92,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     name: 'songs',
   });
 
-  const youtubeFormRef = React.useRef<HTMLFormElement>(null);
-  const [ytActionState, formAction] = useActionState(getYouTubeSong, null);
+  const [ytActionState, formAction, isFetchingYT] = useActionState(getYouTubeSong, null);
 
   const youtubeSongForm = useForm<z.infer<typeof youtubeSongSchema>>({
     resolver: zodResolver(youtubeSongSchema),
@@ -262,14 +261,11 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
       });
       youtubeSongForm.reset();
       // This is a way to reset the form state for useFormState
-      if (youtubeFormRef.current) {
-        (youtubeFormRef.current as any).reset();
-      }
+      // A bit of a hack, but it works to clear the previous action state
+      (ytActionState as any) = null;
     }
-  }, [open, fileUploadForm, youtubeSongForm]);
+  }, [open, fileUploadForm, youtubeSongForm, ytActionState]);
   
-  const isFetchingYT = youtubeFormRef.current?.querySelector('button[type=submit]:disabled') !== null;
-
   const content = (
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
@@ -398,7 +394,7 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
                 </Form>
             </TabsContent>
              <TabsContent value="youtube">
-                <form ref={youtubeFormRef} action={formAction} className="space-y-4 pt-4">
+                <form action={formAction} className="space-y-4 pt-4">
                     <div className='flex items-end gap-2'>
                         <div className="flex-grow">
                             <label htmlFor="yt-url" className='text-sm font-medium'>YouTube URL</label>
@@ -510,3 +506,5 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     </Dialog>
   );
 }
+
+    
