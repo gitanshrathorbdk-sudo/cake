@@ -260,11 +260,8 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
         songs: [{ title: '', artist: '', characteristics: '', file: undefined }],
       });
       youtubeSongForm.reset();
-      // This is a way to reset the form state for useFormState
-      // A bit of a hack, but it works to clear the previous action state
-      (ytActionState as any) = null;
     }
-  }, [open, fileUploadForm, youtubeSongForm, ytActionState]);
+  }, [open, fileUploadForm, youtubeSongForm]);
   
   const content = (
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -506,5 +503,3 @@ export function UploadMusicDialog({ open, onOpenChange, onSongsAdded, children }
     </Dialog>
   );
 }
-
-    
