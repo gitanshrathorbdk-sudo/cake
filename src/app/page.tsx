@@ -16,6 +16,7 @@ export default function Home() {
   const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
+  const [currentPlaylist, setCurrentPlaylist] = React.useState<Playlist | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
@@ -23,7 +24,7 @@ export default function Home() {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    async function loadSongs() {
+    async function loadData() {
       try {
         // Load default songs from JSON
         const defaultSongs: Song[] = defaultSongsData.defaultSongs;
@@ -35,20 +36,37 @@ export default function Home() {
           fileUrl: URL.createObjectURL(s.file)
         }));
 
-        // Combine both lists, avoiding duplicates if a default song was somehow uploaded
         const combinedSongs = [...defaultSongs, ...songsWithUrls];
         const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
         
         setSongs(uniqueSongs);
 
+        // Load playlists from local storage
+        const savedPlaylists = localStorage.getItem('harmonica-playlists');
+        if (savedPlaylists) {
+            const parsedPlaylists: Playlist[] = JSON.parse(savedPlaylists);
+            // Re-hydrate song objects from the main songs list
+            const hydratedPlaylists = parsedPlaylists.map(p => ({
+                ...p,
+                songs: p.songs.map(ps => uniqueSongs.find(s => (s.id && s.id === ps.id) || s.fileUrl === ps.fileUrl)).filter((s): s is Song => !!s)
+            }));
+            setPlaylists(hydratedPlaylists);
+        }
+
       } catch (e) {
-        console.error("Failed to load songs", e);
+        console.error("Failed to load songs or playlists", e);
       } finally {
         setIsDbLoading(false);
       }
     }
-    loadSongs();
+    loadData();
   }, []);
+
+  React.useEffect(() => {
+    // Save playlists to local storage whenever they change
+    localStorage.setItem('harmonica-playlists', JSON.stringify(playlists));
+  }, [playlists]);
+
 
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -67,7 +85,6 @@ export default function Home() {
     // Clean up object URLs to avoid memory leaks
     return () => {
       songs.forEach(song => {
-        // Only revoke URLs for blob files created from IndexedDB
         if (song.file) {
           URL.revokeObjectURL(song.fileUrl);
         }
@@ -89,13 +106,17 @@ export default function Home() {
   const handlePlaylistCreated = (newPlaylist: Playlist) => {
     setPlaylists(prev => [...prev, newPlaylist]);
   };
+  
+  const handlePlaylistsChange = (updatedPlaylists: Playlist[]) => {
+    setPlaylists(updatedPlaylists);
+  };
+
 
   const handleAddToPlaylist = (playlistName: string, song: Song) => {
     setPlaylists(prevPlaylists => {
       return prevPlaylists.map(p => {
         if (p.name === playlistName) {
-          // Avoid adding duplicate songs
-          if (p.songs.some(s => s.id ? s.id === song.id : s.fileUrl === song.fileUrl)) {
+          if (p.songs.some(s => (s.id && s.id === song.id) || s.fileUrl === song.fileUrl)) {
              toast({
               variant: 'destructive',
               title: 'Already in playlist',
@@ -114,7 +135,13 @@ export default function Home() {
     });
   };
 
-  const handlePlaySong = (song: Song) => {
+  const handlePlaySong = (song: Song, playlist?: Playlist) => {
+    if (playlist) {
+      setCurrentPlaylist(playlist);
+    } else {
+      setCurrentPlaylist(null);
+    }
+
     if ((currentSong?.id && currentSong.id === song.id) || currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
     } else {
@@ -130,21 +157,22 @@ export default function Home() {
   };
 
   const handleSkip = (direction: 'forward' | 'backward') => {
-    if (!currentSong || songs.length === 0) return;
+    const songList = currentPlaylist ? currentPlaylist.songs : songs;
+    if (!currentSong || songList.length === 0) return;
 
-    const currentIndex = songs.findIndex(s => (s.id && s.id === currentSong.id) || (s.fileUrl === currentSong.fileUrl));
+    const currentIndex = songList.findIndex(s => (s.id && s.id === currentSong.id) || (s.fileUrl === currentSong.fileUrl));
     if (currentIndex === -1) {
-        if (songs.length > 0) setCurrentSong(songs[0]);
+        if (songList.length > 0) setCurrentSong(songList[0]);
         return;
     };
 
     let nextIndex;
     if (direction === 'forward') {
-        nextIndex = (currentIndex + 1) % songs.length;
+        nextIndex = (currentIndex + 1) % songList.length;
     } else {
-        nextIndex = (currentIndex - 1 + songs.length) % songs.length;
+        nextIndex = (currentIndex - 1 + songList.length) % songList.length;
     }
-    setCurrentSong(songs[nextIndex]);
+    setCurrentSong(songList[nextIndex]);
     setIsPlaying(true);
   };
   
@@ -166,9 +194,11 @@ export default function Home() {
           <DashboardStats 
             playlists={playlists} 
             onPlaylistCreated={handlePlaylistCreated} 
+            onPlaylistsChange={handlePlaylistsChange}
             songs={songs}
             timeListenedInSeconds={timeListenedInSeconds} 
             currentSong={currentSong}
+            onPlaySong={handlePlaySong}
           />
         </div>
       </main>

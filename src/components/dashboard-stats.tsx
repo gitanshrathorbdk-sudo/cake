@@ -16,12 +16,14 @@ import { YourPlaylistsDialog } from './your-playlists-dialog';
 type DashboardStatsProps = {
     playlists: Playlist[];
     onPlaylistCreated: (playlist: Playlist) => void;
+    onPlaylistsChange: (playlists: Playlist[]) => void;
     songs: Song[];
     timeListenedInSeconds: number;
     currentSong: Song | null;
+    onPlaySong: (song: Song, playlist?: Playlist) => void;
 };
 
-export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListenedInSeconds, currentSong }: DashboardStatsProps) {
+export function DashboardStats({ playlists, onPlaylistCreated, onPlaylistsChange, songs, timeListenedInSeconds, currentSong, onPlaySong }: DashboardStatsProps) {
   const [isPlaylistsDialogOpen, setPlaylistsDialogOpen] = React.useState(false);
   
   const formatTimeListened = (totalSeconds: number) => {
@@ -94,7 +96,7 @@ export function DashboardStats({ playlists, onPlaylistCreated, songs, timeListen
         <CreatePlaylistDialog onPlaylistCreated={onPlaylistCreated} songs={songs} />
       </div>
     </section>
-    <YourPlaylistsDialog open={isPlaylistsDialogOpen} onOpenChange={setPlaylistsDialogOpen} playlists={playlists} />
+    <YourPlaylistsDialog open={isPlaylistsDialogOpen} onOpenChange={setPlaylistsDialogOpen} playlists={playlists} onPlaylistsChange={onPlaylistsChange} onPlaySong={onPlaySong} />
     </>
   );
 }
