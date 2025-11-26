@@ -68,15 +68,18 @@ Vercel is a platform for hosting web applications that has a generous free tier 
         ```bash
         # Initialize your local folder as a Git repository
         git init
+        
+        # Stage all the files for the first commit
         git add .
-        git commit -m "Initial commit"
+
+        # Commit the files with a message
+        git commit -m "Initial fresh commit"
 
         # Rename the default branch to 'main'
         git branch -M main
 
         # Connect your local repository to the one on GitHub
-        # Replace YOUR_USERNAME and YOUR_REPO_NAME with your actual details
-        git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+        git remote add origin https://github.com/gitanshrathorbdk-sudo/cake.git
 
         # Push your code to GitHub
         git push -u origin main
