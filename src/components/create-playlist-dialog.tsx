@@ -45,7 +45,7 @@ export function CreatePlaylistDialog({
   songs,
 }: CreatePlaylistDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [selectedSongs, setSelectedSongs] = React.useState<Set<number>>(
+  const [selectedSongs, setSelectedSongs] = React.useState<Set<string>>(
     new Set()
   );
 
@@ -57,6 +57,10 @@ export function CreatePlaylistDialog({
       playlistName: '',
     },
   });
+
+  const getSongIdentifier = (song: Song): string => {
+    return song.id?.toString() || `${song.artist}-${song.title}`;
+  };
 
   const handleSaveManualPlaylist = (
     values: z.infer<typeof manualPlaylistFormSchema>
@@ -70,7 +74,7 @@ export function CreatePlaylistDialog({
       return;
     }
     const songsForPlaylist = songs.filter(
-      (s) => (s.id && selectedSongs.has(s.id)) || (s.fileUrl && selectedSongs.has(parseInt(s.fileUrl, 36)))
+      (s) => selectedSongs.has(getSongIdentifier(s))
     );
 
 
@@ -98,7 +102,7 @@ export function CreatePlaylistDialog({
     }
   };
 
-  const handleSongSelection = (songIdentifier: number) => {
+  const handleSongSelection = (songIdentifier: string) => {
     const newSelection = new Set(selectedSongs);
     if (newSelection.has(songIdentifier)) {
       newSelection.delete(songIdentifier);
@@ -149,8 +153,8 @@ export function CreatePlaylistDialog({
               <div className="space-y-2 p-2">
                 {songs.length > 0 ? (
                   songs.map((song) => {
-                     const songId = song.id ?? parseInt(song.fileUrl, 36);
-                     return songId ? (
+                     const songId = getSongIdentifier(song);
+                     return (
                       <div
                         key={songId}
                         className="flex items-center justify-between rounded-md p-2 hover:bg-accent/50 cursor-pointer"
@@ -171,7 +175,7 @@ export function CreatePlaylistDialog({
                           onCheckedChange={() => handleSongSelection(songId)}
                         />
                       </div>
-                    ) : null
+                    );
                   })
                 ) : (
                   <p className="py-8 text-center text-muted-foreground">
