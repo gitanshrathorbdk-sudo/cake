@@ -9,7 +9,6 @@ import type { Song } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
-import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
@@ -19,15 +18,11 @@ export default function Home() {
   const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
   const [isDbLoading, setIsDbLoading] = React.useState(true);
-  const { toast } = useToast();
 
   React.useEffect(() => {
     async function loadData() {
       try {
-        // Load default songs from JSON
         const defaultSongs: Song[] = defaultSongsData.defaultSongs;
-
-        // Load user-uploaded songs from IndexedDB
         const dbSongs = await db.songs.toArray();
         const songsWithUrls = dbSongs.map(s => ({
           ...s,
@@ -38,6 +33,9 @@ export default function Home() {
         const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
         
         setSongs(uniqueSongs);
+        if (uniqueSongs.length > 0 && !currentSong) {
+          setCurrentSong(uniqueSongs[0]);
+        }
 
       } catch (e) {
         console.error("Failed to load songs", e);
@@ -46,6 +44,16 @@ export default function Home() {
       }
     }
     loadData();
+
+    // This return function is for cleanup
+    return () => {
+      songs.forEach(song => {
+        if (song.file) { // Only revoke URLs for blob-based songs
+          URL.revokeObjectURL(song.fileUrl);
+        }
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -62,21 +70,14 @@ export default function Home() {
   }, [isPlaying]);
 
 
-  React.useEffect(() => {
-    // Clean up object URLs to avoid memory leaks
-    return () => {
-      songs.forEach(song => {
-        if (song.file) {
-          URL.revokeObjectURL(song.fileUrl);
-        }
-      });
-    };
-  }, [songs]);
-
   const handleSongsAdded = (newSongs: Song[]) => {
     setSongs(prevSongs => {
       const allSongs = [...prevSongs, ...newSongs];
-      const uniqueSongs = Array.from(new Map(allSongs.map(s => [s.title + s.artist, s])).values());
+      // Create a map to ensure uniqueness based on a composite key.
+      const uniqueSongsMap = new Map(allSongs.map(s => [s.title + s.artist, s]));
+      const uniqueSongs = Array.from(uniqueSongsMap.values());
+      
+      // If no song is currently selected, set the first one from the new list.
       if (!currentSong && uniqueSongs.length > 0) {
         setCurrentSong(uniqueSongs[0]);
       }
@@ -84,9 +85,8 @@ export default function Home() {
     });
   };
   
-
   const handlePlaySong = (song: Song) => {
-    if ((currentSong?.id && currentSong.id === song.id) || currentSong?.fileUrl === song.fileUrl) {
+    if (currentSong?.id === song.id && currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
     } else {
         setCurrentSong(song);
@@ -101,22 +101,20 @@ export default function Home() {
   };
 
   const handleSkip = (direction: 'forward' | 'backward') => {
-    const songList = songs;
-    if (!currentSong || songList.length === 0) return;
+    if (songs.length === 0) return;
 
-    const currentIndex = songList.findIndex(s => (s.id && s.id === currentSong.id) || (s.fileUrl === currentSong.fileUrl));
-    if (currentIndex === -1) {
-        if (songList.length > 0) setCurrentSong(songList[0]);
-        return;
-    };
-
+    const currentIndex = songs.findIndex(s => s.id === currentSong?.id && s.fileUrl === currentSong?.fileUrl);
+    
     let nextIndex;
-    if (direction === 'forward') {
-        nextIndex = (currentIndex + 1) % songList.length;
+    if (currentIndex === -1) {
+        nextIndex = 0; // If current song not found, start from the beginning
+    } else if (direction === 'forward') {
+        nextIndex = (currentIndex + 1) % songs.length;
     } else {
-        nextIndex = (currentIndex - 1 + songList.length) % songList.length;
+        nextIndex = (currentIndex - 1 + songs.length) % songs.length;
     }
-    setCurrentSong(songList[nextIndex]);
+    
+    setCurrentSong(songs[nextIndex]);
     setIsPlaying(true);
   };
   
