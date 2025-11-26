@@ -12,6 +12,7 @@ import { CreatePlaylistDialog } from './create-playlist-dialog';
 import type { Playlist, Song } from '@/lib/types';
 import * as React from 'react';
 import { YourPlaylistsDialog } from './your-playlists-dialog';
+import { cn } from '@/lib/utils';
 
 type DashboardStatsProps = {
     playlists: Playlist[];
@@ -79,18 +80,30 @@ export function DashboardStats({ playlists, onPlaylistCreated, onPlaylistsChange
     <section className="space-y-6">
        <h2 className="text-3xl font-bold tracking-tight">Your Dashboard</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title} onClick={stat.action} className={stat.action ? 'cursor-pointer hover:bg-accent/50' : ''}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              {stat.icon}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold truncate">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.map((stat) => {
+          const card = (
+            <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                {stat.icon}
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold truncate">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </CardContent>
+            </Card>
+          );
+          
+          if (stat.action) {
+            return (
+                <div key={stat.title} onClick={stat.action} className={cn(stat.action ? 'cursor-pointer rounded-lg hover:ring-2 hover:ring-primary/50' : '')}>
+                    {card}
+                </div>
+            )
+          }
+
+          return card;
+        })}
       </div>
       <div className="flex justify-center pt-4">
         <CreatePlaylistDialog onPlaylistCreated={onPlaylistCreated} songs={songs} />
