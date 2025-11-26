@@ -17,6 +17,7 @@ export default function Home() {
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
+  const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
   const [isDbLoading, setIsDbLoading] = React.useState(true);
   const { toast } = useToast();
@@ -146,6 +147,10 @@ export default function Home() {
     setCurrentSong(songs[nextIndex]);
     setIsPlaying(true);
   };
+  
+  const handleToggleRepeat = () => {
+    setIsRepeat(prev => !prev);
+  };
 
   return (
     <div className="flex h-svh w-full flex-col bg-background text-foreground">
@@ -170,8 +175,10 @@ export default function Home() {
       <MusicControlBar 
         song={currentSong} 
         isPlaying={isPlaying} 
+        isRepeat={isRepeat}
         onPlayPause={handlePlayPause}
         onSkip={handleSkip}
+        onToggleRepeat={handleToggleRepeat}
         playlists={playlists}
         onAddToPlaylist={handleAddToPlaylist}
       />

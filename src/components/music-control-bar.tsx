@@ -1,22 +1,25 @@
 'use client';
 import * as React from 'react';
-import { SkipBack, Play, Pause, SkipForward, Music } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Music, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
 import type { Playlist, Song } from '@/lib/types';
 import { AddToPlaylistMenu } from './add-to-playlist-menu';
+import { cn } from '@/lib/utils';
 
 interface MusicControlBarProps {
     song: Song | null;
     isPlaying: boolean;
+    isRepeat: boolean;
     onPlayPause: () => void;
     onSkip: (direction: 'forward' | 'backward') => void;
+    onToggleRepeat: () => void;
     playlists: Playlist[];
     onAddToPlaylist: (playlistName: string, song: Song) => void;
 }
 
-export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlists, onAddToPlaylist }: MusicControlBarProps) {
+export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip, onToggleRepeat, playlists, onAddToPlaylist }: MusicControlBarProps) {
   const [progress, setProgress] = React.useState(0);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
@@ -30,10 +33,21 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlist
   const [duration, setDuration] = React.useState(0);
   const [currentTime, setCurrentTime] = React.useState(0);
 
+  // Effect to manage the audio source and loop status
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.loop = isRepeat;
+    }
+  }, [isRepeat]);
+
   // Effect to manage the audio source
   React.useEffect(() => {
     const audio = audioRef.current;
     if (audio && song) {
+      // Reset progress when song changes
+      setCurrentTime(0);
+      setProgress(0);
       audio.src = song.fileUrl;
       audio.load(); // Load the new source
       if (isPlaying) {
@@ -72,7 +86,7 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlist
     if (audio && !isNaN(audio.duration) && audio.duration > 0) {
         setCurrentTime(audio.currentTime);
         setProgress((audio.currentTime / audio.duration) * 100);
-        if (audio.currentTime === audio.duration) {
+        if (audio.currentTime === audio.duration && !isRepeat) {
           onSkip('forward');
         }
     }
@@ -95,14 +109,21 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlist
     }
   };
 
+  const handleOnEnded = () => {
+    if (!isRepeat) {
+        onSkip('forward');
+    }
+  };
+
+
   return (
     <footer className="sticky bottom-0 z-10 w-full border-t bg-card/95 backdrop-blur-sm">
       <audio
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => onSkip('forward')}
-        // Remove src from here; it's managed by the useEffect
+        onEnded={handleOnEnded}
+        loop={isRepeat}
       />
       <div className="container mx-auto flex h-24 items-center justify-between gap-4 p-4">
         <div className="flex w-1/3 items-center gap-3">
@@ -163,6 +184,15 @@ export function MusicControlBar({ song, isPlaying, onPlayPause, onSkip, playlist
         </div>
 
         <div className="flex w-1/3 items-center justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleRepeat}
+              disabled={!song}
+              className={cn(isRepeat && 'text-primary hover:text-primary')}
+            >
+              <Repeat className="h-5 w-5" />
+            </Button>
             <AddToPlaylistMenu playlists={playlists} currentSong={song} onAddToPlaylist={onAddToPlaylist} />
         </div>
       </div>
