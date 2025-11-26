@@ -59,7 +59,7 @@ export function CreatePlaylistDialog({
   });
 
   const getSongIdentifier = (song: Song): string => {
-    return song.id?.toString() || `${song.artist}-${song.title}`;
+    return song.id ? song.id.toString() : `${song.artist}-${song.title}`;
   };
 
   const handleSaveManualPlaylist = (
