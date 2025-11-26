@@ -5,15 +5,18 @@ import { Header } from '@/components/header';
 import { MusicControlBar } from '@/components/music-control-bar';
 import { YourMusic } from '@/components/your-music';
 import { DashboardStats } from '@/components/dashboard-stats';
-import type { Song } from '@/lib/types';
+import type { Playlist, Song } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
+import { YourPlaylists } from '@/components/your-playlists';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
+  const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
+  const [activePlaylist, setActivePlaylist] = React.useState<Playlist | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
@@ -22,6 +25,7 @@ export default function Home() {
   React.useEffect(() => {
     async function loadData() {
       try {
+        await db.open();
         const defaultSongs: Song[] = defaultSongsData.defaultSongs;
         const dbSongs = await db.songs.toArray();
         const songsWithUrls = dbSongs.map(s => ({
@@ -33,29 +37,31 @@ export default function Home() {
         const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
         
         setSongs(uniqueSongs);
+
+        const dbPlaylists = await db.playlists.toArray();
+        setPlaylists(dbPlaylists);
+
         if (uniqueSongs.length > 0 && !currentSong) {
           setCurrentSong(uniqueSongs[0]);
         }
 
       } catch (e) {
-        console.error("Failed to load songs", e);
+        console.error("Failed to load data", e);
       } finally {
         setIsDbLoading(false);
       }
     }
     loadData();
 
-    // This return function is for cleanup
     return () => {
       songs.forEach(song => {
-        if (song.file) { // Only revoke URLs for blob-based songs
+        if (song.file) { 
           URL.revokeObjectURL(song.fileUrl);
         }
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -69,15 +75,24 @@ export default function Home() {
     };
   }, [isPlaying]);
 
+  const handlePlaylistCreated = (newPlaylist: Playlist) => {
+    setPlaylists(prev => [...prev, newPlaylist]);
+  };
+
+  const handlePlaylistUpdated = (updatedPlaylist: Playlist) => {
+    setPlaylists(prev => prev.map(p => p.id === updatedPlaylist.id ? updatedPlaylist : p));
+  };
+  
+  const handlePlaylistDeleted = (playlistId: number) => {
+    setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+  };
 
   const handleSongsAdded = (newSongs: Song[]) => {
     setSongs(prevSongs => {
       const allSongs = [...prevSongs, ...newSongs];
-      // Create a map to ensure uniqueness based on a composite key.
       const uniqueSongsMap = new Map(allSongs.map(s => [s.title + s.artist, s]));
       const uniqueSongs = Array.from(uniqueSongsMap.values());
       
-      // If no song is currently selected, set the first one from the new list.
       if (!currentSong && uniqueSongs.length > 0) {
         setCurrentSong(uniqueSongs[0]);
       }
@@ -85,12 +100,13 @@ export default function Home() {
     });
   };
   
-  const handlePlaySong = (song: Song) => {
+  const handlePlaySong = (song: Song, playlist: Playlist | null = null) => {
     if (currentSong?.id === song.id && currentSong?.fileUrl === song.fileUrl) {
         handlePlayPause();
     } else {
         setCurrentSong(song);
         setIsPlaying(true);
+        setActivePlaylist(playlist);
     }
   };
   
@@ -101,20 +117,24 @@ export default function Home() {
   };
 
   const handleSkip = (direction: 'forward' | 'backward') => {
-    if (songs.length === 0) return;
+    const songPool = activePlaylist 
+      ? activePlaylist.songIds.map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[] 
+      : songs;
+      
+    if (songPool.length === 0) return;
 
-    const currentIndex = songs.findIndex(s => s.id === currentSong?.id && s.fileUrl === currentSong?.fileUrl);
+    const currentIndex = songPool.findIndex(s => s.id === currentSong?.id && s.fileUrl === currentSong?.fileUrl);
     
     let nextIndex;
     if (currentIndex === -1) {
-        nextIndex = 0; // If current song not found, start from the beginning
+        nextIndex = 0;
     } else if (direction === 'forward') {
-        nextIndex = (currentIndex + 1) % songs.length;
+        nextIndex = (currentIndex + 1) % songPool.length;
     } else {
-        nextIndex = (currentIndex - 1 + songs.length) % songs.length;
+        nextIndex = (currentIndex - 1 + songPool.length) % songPool.length;
     }
     
-    setCurrentSong(songs[nextIndex]);
+    setCurrentSong(songPool[nextIndex]);
     setIsPlaying(true);
   };
   
@@ -133,6 +153,15 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} onSongsAdded={handleSongsAdded} isLoading={isDbLoading} />
+          <YourPlaylists
+            playlists={playlists}
+            songs={songs}
+            onPlaySong={handlePlaySong}
+            onPlaylistCreated={handlePlaylistCreated}
+            onPlaylistUpdated={handlePlaylistUpdated}
+            onPlaylistDeleted={handlePlaylistDeleted}
+            isLoading={isDbLoading}
+          />
           <DashboardStats 
             songs={songs}
             timeListenedInSeconds={timeListenedInSeconds} 

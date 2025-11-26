@@ -6,3 +6,9 @@ export type Song = {
   characteristics: string[];
   file?: File; // Optional: only present for user-uploaded songs
 };
+
+export type Playlist = {
+    id?: number;
+    name: string;
+    songIds: number[];
+};
