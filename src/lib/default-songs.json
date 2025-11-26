@@ -15,8 +15,6 @@
       "fileUrl": "/music/Aaam.mp3",
       "characteristics": ["funk", "upbeat", "retro"]
     },
-  
-       
     {
       "id": 1004,
       "title": "295",
@@ -50,6 +48,55 @@
       "title": "parno",
       "artist": "Artist Name",
       "fileUrl": "/music/PN.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1009,
+      "title": "Tere Ishq Me",
+      "artist": "Artist Name",
+      "fileUrl": "/music/Tere1.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1010,
+      "title": "Araz Kiya He",
+      "artist": "Artist Name",
+      "fileUrl": "/music/araz.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1011,
+      "title": "Finding Her",
+      "artist": "Artist Name",
+      "fileUrl": "/music/Findh.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1012,
+      "title": "Humsafar",
+      "artist": "Artist Name",
+      "fileUrl": "/music/Hum.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1013,
+      "title": "Jhol",
+      "artist": "Artist Name",
+      "fileUrl": "/music/jhol.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1014,
+      "title": "Maand",
+      "artist": "Artist Name",
+      "fileUrl": "/music/Maand.mp3",
+      "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1015,
+      "title": "Usey Kehna",
+      "artist": "Artist Name",
+      "fileUrl": "/music/useyk.mp3",
       "characteristics": ["folk", "upbeat"]
     }
   ]
