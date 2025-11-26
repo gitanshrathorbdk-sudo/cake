@@ -1,3 +1,4 @@
+
 {
   "defaultSongs": [
     {
@@ -55,6 +56,27 @@
       "artist": "Artist Name",
       "fileUrl": "/music/PN.mp3",
       "characteristics": ["folk", "upbeat"]
+    },
+    {
+      "id": 1009,
+      "title": "Retro Waves",
+      "artist": "Neon Drive",
+      "fileUrl": "/music/retro-waves.mp3",
+      "characteristics": ["synthwave", "80s", "electronic"]
+    },
+    {
+      "id": 1010,
+      "title": "Summer Lo-fi",
+      "artist": "Chillhop Beats",
+      "fileUrl": "/music/summer-lofi.mp3",
+      "characteristics": ["lo-fi", "hip-hop", "relaxing"]
+    },
+    {
+      "id": 1011,
+      "title": "Piano Reflections",
+      "artist": "Amelia Woods",
+      "fileUrl": "/music/piano-reflections.mp3",
+      "characteristics": ["classical", "piano", "calm"]
     }
   ]
 }
