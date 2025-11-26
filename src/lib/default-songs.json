@@ -3,16 +3,16 @@
   "defaultSongs": [
     {
       "id": 1001,
-      "title": "Ambient Dreams",
-      "artist": "Synthwave Cafe",
-      "fileUrl": "/music/ambient-dreams.mp3",
-      "characteristics": ["ambient", "chill", "instrumental"]
+      "title": "Sahiba Dreams",
+      "artist": "Aditya Khatrie",
+      "fileUrl": "/music/Sah.mp3",
+      "characteristics": ["chill", "instrumental"]
     },
     {
       "id": 1002,
-      "title": "Midnight Funk",
-      "artist": "Groove Masters",
-      "fileUrl": "/music/midnight-funk.mp3",
+      "title": "Aam Jahe Munde",
+      "artist": "Paaji ",
+      "fileUrl": "/music/Aaam.mp3",
       "characteristics": ["funk", "upbeat", "retro"]
     },
     {
