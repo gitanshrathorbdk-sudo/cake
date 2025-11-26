@@ -4,8 +4,7 @@ import { SkipBack, Play, Pause, SkipForward, Music, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
-import type { Playlist, Song } from '@/lib/types';
-import { AddToPlaylistMenu } from './add-to-playlist-menu';
+import type { Song } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface MusicControlBarProps {
@@ -15,11 +14,9 @@ interface MusicControlBarProps {
     onPlayPause: () => void;
     onSkip: (direction: 'forward' | 'backward') => void;
     onToggleRepeat: () => void;
-    playlists: Playlist[];
-    onAddToPlaylist: (playlistName: string, song: Song) => void;
 }
 
-export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip, onToggleRepeat, playlists, onAddToPlaylist }: MusicControlBarProps) {
+export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip, onToggleRepeat }: MusicControlBarProps) {
   const [progress, setProgress] = React.useState(0);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
@@ -193,7 +190,6 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
             >
               <Repeat className="h-5 w-5" />
             </Button>
-            <AddToPlaylistMenu playlists={playlists} currentSong={song} onAddToPlaylist={onAddToPlaylist} />
         </div>
       </div>
     </footer>
