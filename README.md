@@ -94,4 +94,3 @@ Vercel is a platform for hosting web applications that has a generous free tier 
 5.  **Deploy**: Click the **"Deploy"** button.
 
 Vercel will build and deploy your application, giving you a live URL. Any time you push new changes to your Git repository, Vercel will automatically redeploy the app for you.
-# Lovetohear
