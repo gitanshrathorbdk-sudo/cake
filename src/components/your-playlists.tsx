@@ -33,7 +33,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertical } from 'lucide-react';
 import type { Playlist, Song } from '@/lib/types';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
 import { ScrollArea } from './ui/scroll-area';
@@ -64,7 +64,64 @@ export function YourPlaylists({
   const [selectedPlaylist, setSelectedPlaylist] = React.useState<Playlist | null>(null);
   const [playlistToEdit, setPlaylistToEdit] = React.useState<Playlist | null>(null);
   const [playlistToDelete, setPlaylistToDelete] = React.useState<Playlist | null>(null);
+  const [playlistSongs, setPlaylistSongs] = React.useState<Song[]>([]);
+  const dragItem = React.useRef<number | null>(null);
+  const dragOverItem = React.useRef<number | null>(null);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (selectedPlaylist) {
+      const songsInPlaylist = selectedPlaylist.songIds
+        .map(id => songs.find(song => song.id === id))
+        .filter(Boolean) as Song[];
+      setPlaylistSongs(songsInPlaylist);
+    } else {
+      setPlaylistSongs([]);
+    }
+  }, [selectedPlaylist, songs]);
+
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
+    dragItem.current = position;
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
+    dragOverItem.current = position;
+  };
+
+  const handleDrop = async () => {
+    if (dragItem.current !== null && dragOverItem.current !== null && selectedPlaylist) {
+      const newPlaylistSongs = [...playlistSongs];
+      const dragItemContent = newPlaylistSongs[dragItem.current];
+      newPlaylistSongs.splice(dragItem.current, 1);
+      newPlaylistSongs.splice(dragOverItem.current, 0, dragItemContent);
+      dragItem.current = null;
+      dragOverItem.current = null;
+      setPlaylistSongs(newPlaylistSongs);
+
+      const newSongIds = newPlaylistSongs.map(s => s.id!);
+      const updatedPlaylist = { ...selectedPlaylist, songIds: newSongIds };
+      
+      try {
+        await db.playlists.update(selectedPlaylist.id!, { songIds: newSongIds });
+        onPlaylistUpdated(updatedPlaylist);
+        toast({
+            title: "Playlist Updated",
+            description: `The order of songs in "${selectedPlaylist.name}" has been updated.`,
+        });
+      } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Database Error",
+            description: "Could not save the new song order.",
+        });
+        // Revert UI change if DB update fails
+        const originalSongs = selectedPlaylist.songIds
+          .map(id => songs.find(song => song.id === id))
+          .filter(Boolean) as Song[];
+        setPlaylistSongs(originalSongs);
+      }
+    }
+  };
 
   const handleEdit = (playlist: Playlist) => {
     setPlaylistToEdit(playlist);
@@ -94,14 +151,6 @@ export function YourPlaylists({
         setPlaylistToDelete(null);
     }
   };
-
-
-  const playlistSongs = React.useMemo(() => {
-    if (!selectedPlaylist) return [];
-    return selectedPlaylist.songIds
-      .map(id => songs.find(song => song.id === id))
-      .filter(Boolean) as Song[];
-  }, [selectedPlaylist, songs]);
 
   return (
     <>
@@ -191,13 +240,25 @@ export function YourPlaylists({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-12"></TableHead>
                         <TableHead>Title</TableHead>
                         <TableHead className="hidden md:table-cell">Artist</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {playlistSongs.map(song => (
-                        <TableRow key={song.id} className="group cursor-pointer" onClick={() => onPlaySong(song, selectedPlaylist)}>
+                      {playlistSongs.map((song, index) => (
+                        <TableRow 
+                            key={song.id} 
+                            className="group"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragEnter={(e) => handleDragEnter(e, index)}
+                            onDragEnd={handleDrop}
+                            onDragOver={(e) => e.preventDefault()}
+                        >
+                            <TableCell className="cursor-move">
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                            </TableCell>
                             <TableCell>
                                 <Button
                                     variant="ghost"
@@ -211,13 +272,13 @@ export function YourPlaylists({
                                     <Play className="h-5 w-5 fill-current" />
                                 </Button>
                             </TableCell>
-                          <TableCell>
+                          <TableCell onClick={() => onPlaySong(song, selectedPlaylist)} className="cursor-pointer">
                             <div className="flex items-center gap-3">
                               <Music className="h-5 w-5 text-muted-foreground" />
                               <p className="font-medium">{song.title}</p>
                             </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">{song.artist}</TableCell>
+                          <TableCell onClick={() => onPlaySong(song, selectedPlaylist)} className="hidden md:table-cell cursor-pointer">{song.artist}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
