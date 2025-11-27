@@ -88,6 +88,31 @@ export function YourPlaylists({
     dragOverItem.current = position;
   };
 
+  const handleSongReordered = async (reorderedSongs: Song[]) => {
+    if (!selectedPlaylist) return;
+
+    const newSongIds = reorderedSongs.map(s => s.id!).filter(Boolean) as number[];
+    const updatedPlaylist = { ...selectedPlaylist, songIds: newSongIds };
+
+    try {
+        await db.playlists.update(selectedPlaylist.id!, { songIds: newSongIds });
+        onPlaylistUpdated(updatedPlaylist);
+        // We update the local state optimistically, so a success toast might be too noisy.
+        // A failure toast is more important.
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Database Error",
+            description: "Could not save the new song order.",
+        });
+        // Revert UI change if DB update fails by re-fetching from original props
+        const originalSongs = selectedPlaylist.songIds
+          .map(id => songs.find(song => song.id === id))
+          .filter(Boolean) as Song[];
+        setPlaylistSongs(originalSongs);
+    }
+};
+
   const handleDrop = async () => {
     if (dragItem.current !== null && dragOverItem.current !== null && selectedPlaylist) {
       const newPlaylistSongs = [...playlistSongs];
@@ -96,30 +121,12 @@ export function YourPlaylists({
       newPlaylistSongs.splice(dragOverItem.current, 0, dragItemContent);
       dragItem.current = null;
       dragOverItem.current = null;
-      setPlaylistSongs(newPlaylistSongs);
-
-      const newSongIds = newPlaylistSongs.map(s => s.id!);
-      const updatedPlaylist = { ...selectedPlaylist, songIds: newSongIds };
       
-      try {
-        await db.playlists.update(selectedPlaylist.id!, { songIds: newSongIds });
-        onPlaylistUpdated(updatedPlaylist);
-        toast({
-            title: "Playlist Updated",
-            description: `The order of songs in "${selectedPlaylist.name}" has been updated.`,
-        });
-      } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Database Error",
-            description: "Could not save the new song order.",
-        });
-        // Revert UI change if DB update fails
-        const originalSongs = selectedPlaylist.songIds
-          .map(id => songs.find(song => song.id === id))
-          .filter(Boolean) as Song[];
-        setPlaylistSongs(originalSongs);
-      }
+      // Update UI optimistically
+      setPlaylistSongs(newPlaylistSongs);
+      
+      // Persist the changes
+      await handleSongReordered(newPlaylistSongs);
     }
   };
 
