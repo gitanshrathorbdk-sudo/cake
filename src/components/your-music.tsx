@@ -14,11 +14,10 @@ import { Input } from './ui/input';
 interface YourMusicProps {
   songs: Song[];
   onPlaySong: (song: Song, playlist: Playlist | null) => void;
-  onSongsAdded: (songs: Song[]) => void;
   isLoading: boolean;
 }
 
-export function YourMusic({ songs, onPlaySong, onSongsAdded, isLoading }: YourMusicProps) {
+export function YourMusic({ songs, onPlaySong, isLoading }: YourMusicProps) {
     const [searchQuery, setSearchQuery] = React.useState('');
 
     const filteredSongs = songs.filter(song => 
