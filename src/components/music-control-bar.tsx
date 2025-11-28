@@ -124,8 +124,8 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
         onEnded={handleOnEnded}
         loop={isRepeat}
       />
-      <div className="container mx-auto flex h-28 items-center justify-between gap-4 px-4">
-        <div className="flex w-1/3 items-center gap-3">
+      <div className="container mx-auto grid h-28 grid-cols-3 items-center gap-4 px-4">
+        <div className="flex items-center gap-3">
           {song ? (
             <>
               <Image
@@ -136,7 +136,7 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
                 className="rounded-md"
                 data-ai-hint="album cover"
               />
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <p className="font-semibold text-foreground truncate">{song.title}</p>
                 <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
               </div>
@@ -150,8 +150,16 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
           )}
         </div>
 
-        <div className="flex w-full flex-col items-center justify-center gap-2 md:w-1/3">
-             {isPlaying && <Label className="text-xs font-semibold uppercase tracking-wider text-primary">Music playing</Label>}
+        <div className="flex flex-col items-center justify-center gap-1">
+             <div className="flex items-center gap-3">
+                {isPlaying && <Label className="text-xs font-semibold uppercase tracking-wider text-primary">Music playing</Label>}
+                {song && (
+                    <div className='text-center'>
+                        <p className="font-semibold text-foreground truncate text-sm">{song.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                    </div>
+                )}
+             </div>
             <div className="flex w-full max-w-xs items-center gap-2 text-xs">
                 <span className="w-10 text-right">{formatTime(currentTime)}</span>
                 <Slider
@@ -183,7 +191,7 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
             </div>
         </div>
 
-        <div className="flex w-1/3 items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
             {nextSong && (
                 <TooltipProvider>
                     <Tooltip>
