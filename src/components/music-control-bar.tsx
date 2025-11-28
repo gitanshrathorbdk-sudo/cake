@@ -1,23 +1,27 @@
 'use client';
 import * as React from 'react';
-import { SkipBack, Play, Pause, SkipForward, Music, Repeat } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Music, Repeat, ListMusic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
 import type { Song } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Label } from './ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface MusicControlBarProps {
     song: Song | null;
+    nextSong: Song | null;
     isPlaying: boolean;
     isRepeat: boolean;
     onPlayPause: () => void;
     onSkip: (direction: 'forward' | 'backward') => void;
     onToggleRepeat: () => void;
+    onSongEnd: () => void;
+    onSetNextClick: () => void;
 }
 
-export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip, onToggleRepeat }: MusicControlBarProps) {
+export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPause, onSkip, onToggleRepeat, onSongEnd, onSetNextClick }: MusicControlBarProps) {
   const [progress, setProgress] = React.useState(0);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
@@ -84,9 +88,6 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
     if (audio && !isNaN(audio.duration) && audio.duration > 0) {
         setCurrentTime(audio.currentTime);
         setProgress((audio.currentTime / audio.duration) * 100);
-        if (audio.currentTime === audio.duration && !isRepeat) {
-          onSkip('forward');
-        }
     }
   };
   
@@ -109,7 +110,7 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
 
   const handleOnEnded = () => {
     if (!isRepeat) {
-        onSkip('forward');
+        onSongEnd();
     }
   };
 
@@ -183,10 +184,26 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
         </div>
 
         <div className="flex w-1/3 items-center justify-end gap-2">
+            {nextSong && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                             <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-1.5 text-sm">
+                                <ListMusic className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground hidden lg:inline">Next:</span>
+                                <span className="font-semibold truncate max-w-28">{nextSong.title}</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Up next: {nextSong.title} by {nextSong.artist}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onSkip('forward')}
+              onClick={onSetNextClick}
               disabled={!song}
             >
               Set Next Music

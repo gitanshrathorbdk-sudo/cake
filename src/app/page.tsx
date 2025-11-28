@@ -10,12 +10,15 @@ import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
 import { YourPlaylists } from '@/components/your-playlists';
+import { SetNextMusicDialog } from '@/components/set-next-music-dialog';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
   const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
+  const [isSetNextMusicDialogOpen, setSetNextMusicDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
+  const [nextSong, setNextSong] = React.useState<Song | null>(null);
   const [activePlaylist, setActivePlaylist] = React.useState<Playlist | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isRepeat, setIsRepeat] = React.useState(false);
@@ -107,6 +110,7 @@ export default function Home() {
         setCurrentSong(song);
         setIsPlaying(true);
         setActivePlaylist(playlist);
+        setNextSong(null); // Clear next song when a new song is explicitly played
     }
   };
   
@@ -116,7 +120,14 @@ export default function Home() {
     }
   };
 
-  const handleSkip = (direction: 'forward' | 'backward') => {
+  const playNextSong = () => {
+    if (nextSong) {
+      setCurrentSong(nextSong);
+      setNextSong(null);
+      setIsPlaying(true);
+      return;
+    }
+    
     const songPool = activePlaylist 
       ? activePlaylist.songIds.map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[] 
       : songs;
@@ -128,14 +139,44 @@ export default function Home() {
     let nextIndex;
     if (currentIndex === -1) {
         nextIndex = 0;
-    } else if (direction === 'forward') {
+    } else {
         nextIndex = (currentIndex + 1) % songPool.length;
+    }
+    
+    setCurrentSong(songPool[nextIndex]);
+    setIsPlaying(true);
+  }
+
+  const handleSkip = (direction: 'forward' | 'backward') => {
+     if (direction === 'forward') {
+        playNextSong();
+        return;
+    }
+    
+    // Backward logic
+    const songPool = activePlaylist 
+      ? activePlaylist.songIds.map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[] 
+      : songs;
+      
+    if (songPool.length === 0) return;
+
+    const currentIndex = songPool.findIndex(s => s.id === currentSong?.id && s.fileUrl === currentSong?.fileUrl);
+    
+    let nextIndex;
+    if (currentIndex === -1) {
+        nextIndex = 0;
     } else {
         nextIndex = (currentIndex - 1 + songPool.length) % songPool.length;
     }
     
     setCurrentSong(songPool[nextIndex]);
     setIsPlaying(true);
+    setNextSong(null);
+  };
+
+  const handleSetNextSong = (song: Song) => {
+    setNextSong(song);
+    setSetNextMusicDialogOpen(false);
   };
   
   const handleToggleRepeat = () => {
@@ -149,6 +190,13 @@ export default function Home() {
         open={isUploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
         onSongsAdded={handleSongsAdded}
+      />
+      <SetNextMusicDialog
+        open={isSetNextMusicDialogOpen}
+        onOpenChange={setSetNextMusicDialogOpen}
+        songs={songs}
+        onSongSelected={handleSetNextSong}
+        currentSong={currentSong}
       />
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
@@ -170,12 +218,15 @@ export default function Home() {
         </div>
       </main>
       <MusicControlBar 
-        song={currentSong} 
+        song={currentSong}
+        nextSong={nextSong}
         isPlaying={isPlaying} 
         isRepeat={isRepeat}
         onPlayPause={handlePlayPause}
         onSkip={handleSkip}
         onToggleRepeat={handleToggleRepeat}
+        onSongEnd={playNextSong}
+        onSetNextClick={() => setSetNextMusicDialogOpen(true)}
       />
     </div>
   );
