@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { SkipBack, Play, Pause, SkipForward, Music, Repeat, ListMusic } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Music, Repeat, ListMusic, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
@@ -191,40 +191,56 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
             </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
-            {nextSong && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-1.5 text-sm">
-                                <ListMusic className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground hidden lg:inline">Next:</span>
-                                <span className="font-semibold truncate max-w-28">{nextSong.title}</span>
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Up next: {nextSong.title} by {nextSong.artist}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-            <Button
+        <div className="flex items-center justify-end gap-3">
+          {nextSong ? (
+            <div className="flex items-center gap-3">
+              <div className='text-right'>
+                <p className="text-xs text-muted-foreground">Up Next</p>
+                <p className="font-semibold text-foreground truncate max-w-40">{nextSong.title}</p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onSetNextClick} disabled={!song}>
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Change next song</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          ) : (
+             <Button
               variant="outline"
               size="sm"
               onClick={onSetNextClick}
               disabled={!song}
             >
-              Set Next Music
+              <ListMusic className="mr-2 h-4 w-4" />
+              Set Next
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleRepeat}
-              disabled={!song}
-              className={cn(isRepeat && 'text-primary hover:text-primary')}
-            >
-              <Repeat className="h-5 w-5" />
-            </Button>
+          )}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleRepeat}
+                    disabled={!song}
+                    className={cn('h-8 w-8', isRepeat && 'text-primary hover:text-primary')}
+                  >
+                    <Repeat className="h-5 w-5" />
+                  </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isRepeat ? 'Disable repeat' : 'Enable repeat'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </footer>
