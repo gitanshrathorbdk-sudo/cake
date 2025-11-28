@@ -12,4 +12,5 @@ export type Playlist = {
     name: string;
     songIds: number[];
     isPublic: boolean; // To distinguish between public (Firestore) and private (Dexie)
+    ownerName?: string; // Optional: name of the creator for public playlists
 };

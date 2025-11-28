@@ -13,15 +13,20 @@ import { YourPlaylists } from '@/components/your-playlists';
 import { SetNextMusicDialog } from '@/components/set-next-music-dialog';
 import { LoginPage } from '@/components/login-page';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
 import type { PlaylistDB } from '@/lib/db';
+import { MakePublicDialog } from '@/components/make-public-dialog';
+
 
 function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [songs, setSongs] = React.useState<Song[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [isSetNextMusicDialogOpen, setSetNextMusicDialogOpen] = React.useState(false);
+  const [isMakePublicDialogOpen, setMakePublicDialogOpen] = React.useState(false);
+  const [playlistToMakePublic, setPlaylistToMakePublic] = React.useState<Playlist | null>(null);
+
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [nextSong, setNextSong] = React.useState<Song | null>(null);
   const [activePlaylist, setActivePlaylist] = React.useState<Playlist | null>(null);
@@ -127,6 +132,26 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
     const playlistDocRef = doc(firestore, 'playlists', playlistId);
     deleteDocumentNonBlocking(playlistDocRef);
   };
+
+  const handleTogglePlaylistPrivacy = (playlist: Playlist) => {
+    if (playlist.isPublic) {
+      // Make it private
+      handleLocalPlaylistCreated({ name: playlist.name, songIds: playlist.songIds, ownerName: playlist.ownerName });
+      handlePublicPlaylistDeleted(playlist.id as string);
+    } else {
+      // Make it public - open dialog to ask for owner name
+      setPlaylistToMakePublic(playlist);
+      setMakePublicDialogOpen(true);
+    }
+  };
+
+  const handleConfirmMakePublic = (playlist: Playlist, ownerName: string) => {
+    handlePublicPlaylistCreated({ name: playlist.name, songIds: playlist.songIds, ownerName });
+    handleLocalPlaylistDeleted(playlist.id as number);
+    setMakePublicDialogOpen(false);
+    setPlaylistToMakePublic(null);
+  };
+
 
   const handleSongsAdded = (newSongs: Song[]) => {
     setSongs(prevSongs => {
@@ -239,6 +264,12 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         onSongSelected={handleSetNextSong}
         currentSong={currentSong}
       />
+       <MakePublicDialog
+        open={isMakePublicDialogOpen}
+        onOpenChange={setMakePublicDialogOpen}
+        playlist={playlistToMakePublic}
+        onConfirm={handleConfirmMakePublic}
+      />
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} isLoading={isDbLoading} />
@@ -252,6 +283,7 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
             onPublicPlaylistUpdated={handlePublicPlaylistUpdated}
             onLocalPlaylistDeleted={handleLocalPlaylistDeleted}
             onPublicPlaylistDeleted={handlePublicPlaylistDeleted}
+            onTogglePlaylistPrivacy={handleTogglePlaylistPrivacy}
             isLoading={isPlaylistsLoading || isDbLoading}
           />
           <DashboardStats 

@@ -33,7 +33,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertical, Globe, Lock } from 'lucide-react';
+import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertical, Globe, Lock, Share2 } from 'lucide-react';
 import type { Playlist, Song } from '@/lib/types';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
 import { ScrollArea } from './ui/scroll-area';
@@ -53,6 +53,7 @@ interface YourPlaylistsProps {
   onPublicPlaylistUpdated: (playlist: Playlist) => void;
   onLocalPlaylistDeleted: (playlistId: number) => void;
   onPublicPlaylistDeleted: (playlistId: string) => void;
+  onTogglePlaylistPrivacy: (playlist: Playlist) => void;
   isLoading: boolean;
 }
 
@@ -66,6 +67,7 @@ export function YourPlaylists({
   onPublicPlaylistUpdated,
   onLocalPlaylistDeleted,
   onPublicPlaylistDeleted,
+  onTogglePlaylistPrivacy,
   isLoading,
 }: YourPlaylistsProps) {
   const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
@@ -79,7 +81,7 @@ export function YourPlaylists({
 
   React.useEffect(() => {
     // If the currently selected playlist is deleted from outside, deselect it.
-    if (selectedPlaylist && !playlists.find(p => p.id === selectedPlaylist.id)) {
+    if (selectedPlaylist && !playlists.find(p => p.id === selectedPlaylist.id && p.isPublic === selectedPlaylist.isPublic)) {
       setSelectedPlaylist(null);
     }
   }, [playlists, selectedPlaylist]);
@@ -187,47 +189,56 @@ export function YourPlaylists({
                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                   </div>
               ) : playlists.length > 0 ? (
-                <div className="space-y-2">
-                  {playlists.map(playlist => (
-                    <div
-                      key={playlist.id}
-                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                        selectedPlaylist?.id === playlist.id
-                          ? 'bg-primary/20'
-                          : 'hover:bg-muted'
-                      }`}
-                      onClick={() => setSelectedPlaylist(playlist)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <ListMusic className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">{playlist.name}</span>
-                        <Badge variant={playlist.isPublic ? 'outline' : 'secondary'}>
-                          {playlist.isPublic 
-                            ? <><Globe className="mr-1 h-3 w-3" />Public</>
-                            : <><Lock className="mr-1 h-3 w-3" />Private</>
-                          }
-                        </Badge>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(playlist)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setPlaylistToDelete(playlist)} className="text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Delete</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                <ScrollArea className="h-[400px]">
+                    <div className="space-y-2 pr-2">
+                    {playlists.map(playlist => (
+                        <div
+                        key={`${playlist.id}-${playlist.isPublic}`}
+                        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedPlaylist?.id === playlist.id && selectedPlaylist?.isPublic === playlist.isPublic
+                            ? 'bg-primary/20'
+                            : 'hover:bg-muted'
+                        }`}
+                        onClick={() => setSelectedPlaylist(playlist)}
+                        >
+                        <div className="flex items-center gap-3">
+                            <ListMusic className="h-5 w-5 text-muted-foreground" />
+                            <div className="flex flex-col">
+                                <span className="font-medium">{playlist.name}</span>
+                                {playlist.isPublic && playlist.ownerName && <span className="text-xs text-muted-foreground">by {playlist.ownerName}</span>}
+                            </div>
+                            <Badge variant={playlist.isPublic ? 'outline' : 'secondary'}>
+                            {playlist.isPublic 
+                                ? <><Globe className="mr-1 h-3 w-3" />Public</>
+                                : <><Lock className="mr-1 h-3 w-3" />Private</>
+                            }
+                            </Badge>
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => e.stopPropagation()}>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => onTogglePlaylistPrivacy(playlist)}>
+                                  <Share2 className="mr-2 h-4 w-4" />
+                                  <span>{playlist.isPublic ? 'Make Private' : 'Make Public'}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(playlist)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Edit</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setPlaylistToDelete(playlist)} className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Delete</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </div>
+                    ))}
                     </div>
-                  ))}
-                </div>
+                </ScrollArea>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No playlists yet.</p>
@@ -250,7 +261,7 @@ export function YourPlaylists({
                             </Badge>
                         </CardTitle>
                         <CardDescription>
-                            {playlistSongs.length} songs
+                            {playlistSongs.length} songs {selectedPlaylist.isPublic && selectedPlaylist.ownerName && `· Curated by ${selectedPlaylist.ownerName}`}
                         </CardDescription>
                     </>
                 ) : (

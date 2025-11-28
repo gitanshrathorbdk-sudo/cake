@@ -13,6 +13,7 @@ export type PlaylistDB = {
   id?: number;
   name: string;
   songIds: number[];
+  ownerName?: string;
 };
 
 export class HarmonicaDB extends Dexie {
@@ -22,6 +23,12 @@ export class HarmonicaDB extends Dexie {
   constructor() {
     super('harmonicaDB');
     
+    // Version 5: Added ownerName to playlists
+    this.version(5).stores({
+      songs: '++id, title, artist',
+      playlists: '++id, name'
+    });
+
     // Version 4: Re-introduce playlists table for private playlists
     this.version(4).stores({
       songs: '++id, title, artist',

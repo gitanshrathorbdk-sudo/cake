@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Song, Playlist } from '@/lib/types';
 import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
-import { GripVertical, Lock, Music, Trash2, Globe } from 'lucide-react';
+import { GripVertical, Lock, Music, Trash2, Globe, User } from 'lucide-react';
 import { Switch } from './ui/switch';
 import type { PlaylistDB } from '@/lib/db';
 
@@ -47,6 +47,7 @@ export function CreatePlaylistDialog({
 }: CreatePlaylistDialogProps) {
   const { toast } = useToast();
   const [playlistName, setPlaylistName] = React.useState('');
+  const [ownerName, setOwnerName] = React.useState('');
   const [selectedSongs, setSelectedSongs] = React.useState<Song[]>([]);
   const [isPublic, setIsPublic] = React.useState(false);
   const dragItem = React.useRef<number | null>(null);
@@ -56,6 +57,7 @@ export function CreatePlaylistDialog({
     if (playlistToEdit) {
       setPlaylistName(playlistToEdit.name);
       setIsPublic(playlistToEdit.isPublic);
+      setOwnerName(playlistToEdit.ownerName || '');
       const playlistSongs = playlistToEdit.songIds
         .map(id => songs.find(s => s.id === id))
         .filter(Boolean) as Song[];
@@ -63,6 +65,7 @@ export function CreatePlaylistDialog({
     } else {
       setPlaylistName('');
       setIsPublic(false);
+      setOwnerName('');
       setSelectedSongs([]);
     }
   }, [playlistToEdit, songs, open]);
@@ -107,6 +110,15 @@ export function CreatePlaylistDialog({
       });
       return;
     }
+    
+    if (isPublic && !ownerName.trim()) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Public playlists must have an owner name.',
+        });
+        return;
+    }
 
     if (selectedSongs.length === 0) {
       toast({
@@ -124,21 +136,21 @@ export function CreatePlaylistDialog({
             // Logic for updating an existing playlist
             const wasPublic = playlistToEdit.isPublic;
             
-            // If privacy changed, delete from old location
+            // If privacy changed, we need to delete from the old location and create in the new one
             if (wasPublic && !isPublic) { // Was public, now private
                 onPublicPlaylistDeleted(playlistToEdit.id as string);
                 const newLocalPlaylist: Omit<PlaylistDB, 'id'> = { name: playlistName, songIds };
                 onLocalPlaylistCreated(newLocalPlaylist);
             } else if (!wasPublic && isPublic) { // Was private, now public
                 onLocalPlaylistDeleted(playlistToEdit.id as number);
-                const newPublicPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds };
+                const newPublicPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds, ownerName };
                 onPublicPlaylistCreated(newPublicPlaylist);
             } else { // Privacy not changed, just update
                 if (isPublic) {
-                    const updatedPlaylist: Playlist = { ...playlistToEdit, id: playlistToEdit.id as string, name: playlistName, songIds, isPublic: true };
+                    const updatedPlaylist: Playlist = { ...playlistToEdit, id: playlistToEdit.id as string, name: playlistName, songIds, ownerName, isPublic: true };
                     onPublicPlaylistUpdated(updatedPlaylist);
                 } else {
-                    const updatedPlaylist: PlaylistDB = { id: playlistToEdit.id as number, name: playlistName, songIds };
+                    const updatedPlaylist: PlaylistDB = { id: playlistToEdit.id as number, name: playlistName, songIds, ownerName: '' };
                     onLocalPlaylistUpdated(updatedPlaylist);
                 }
             }
@@ -149,10 +161,10 @@ export function CreatePlaylistDialog({
         } else {
             // Logic for creating a new playlist
             if (isPublic) {
-                const newPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds };
+                const newPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds, ownerName };
                 onPublicPlaylistCreated(newPlaylist);
             } else {
-                const newPlaylist: Omit<PlaylistDB, 'id'> = { name: playlistName, songIds };
+                const newPlaylist: Omit<PlaylistDB, 'id'> = { name: playlistName, songIds, ownerName: '' };
                 onLocalPlaylistCreated(newPlaylist);
             }
             toast({
@@ -181,7 +193,7 @@ export function CreatePlaylistDialog({
         <DialogHeader>
           <DialogTitle>{playlistToEdit ? 'Edit Playlist' : 'Create Playlist'}</DialogTitle>
           <DialogDescription>
-            {playlistToEdit ? 'Edit the name and songs for your playlist.' : 'Give your playlist a name and add some songs.'}
+            {playlistToEdit ? 'Edit the details for your playlist.' : 'Give your playlist a name and add some songs.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -203,6 +215,17 @@ export function CreatePlaylistDialog({
                     {isPublic ? <><Globe className="h-4 w-4" /> Public (Shared)</> : <><Lock className="h-4 w-4" /> Private (This browser only)</>}
                 </Label>
             </div>
+            {isPublic && (
+                <div className='space-y-2 animate-in fade-in'>
+                    <Label htmlFor="owner-name" className='flex items-center gap-2'><User className='h-4 w-4'/> Owner Name</Label>
+                    <Input
+                        id="owner-name"
+                        placeholder="Your Name"
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                    />
+                </div>
+            )}
             <h3 className="font-semibold mt-4">Available Songs</h3>
             <ScrollArea className="h-80 rounded-md border">
               <div className="p-4">
@@ -234,7 +257,7 @@ export function CreatePlaylistDialog({
 
           {/* Right Side: Selected Songs */}
           <div className="flex flex-col gap-4">
-            <h3 className="font-semibold md:mt-[92px]">Selected Songs ({selectedSongs.length})</h3>
+            <h3 className="font-semibold md:mt-[58px]">Selected Songs ({selectedSongs.length})</h3>
              <ScrollArea className="h-96 rounded-md border">
               <div className="p-4 space-y-2">
                  {selectedSongs.length > 0 ? (
