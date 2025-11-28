@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- IMPORTANT ---
 // These are the valid PINs. You can change or add more here.
-const VALID_PINS = ['1234', '5678', '0000']; 
+const VALID_PINS = ['2007', '7777', '2008']; 
 // 4 hours in milliseconds
 const SESSION_DURATION = 4 * 60 * 60 * 1000; 
 
