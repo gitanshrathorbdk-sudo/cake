@@ -16,13 +16,19 @@ import { useToast } from '@/hooks/use-toast';
 import type { Song, Playlist } from '@/lib/types';
 import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
-import { GripVertical, Music, Trash2 } from 'lucide-react';
+import { GripVertical, Lock, Music, Trash2, Globe } from 'lucide-react';
+import { Switch } from './ui/switch';
+import type { PlaylistDB } from '@/lib/db';
 
 interface CreatePlaylistDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPlaylistCreated: (playlist: Omit<Playlist, 'id'>) => void;
-  onPlaylistUpdated: (playlist: Playlist) => void;
+  onLocalPlaylistCreated: (playlist: Omit<PlaylistDB, 'id'>) => void;
+  onPublicPlaylistCreated: (playlist: Omit<Playlist, 'id' | 'isPublic'>) => void;
+  onLocalPlaylistUpdated: (playlist: PlaylistDB) => void;
+  onPublicPlaylistUpdated: (playlist: Playlist) => void;
+  onLocalPlaylistDeleted: (playlistId: number) => void;
+  onPublicPlaylistDeleted: (playlistId: string) => void;
   songs: Song[];
   playlistToEdit?: Playlist | null;
 }
@@ -30,26 +36,33 @@ interface CreatePlaylistDialogProps {
 export function CreatePlaylistDialog({
   open,
   onOpenChange,
-  onPlaylistCreated,
-  onPlaylistUpdated,
+  onLocalPlaylistCreated,
+  onPublicPlaylistCreated,
+  onLocalPlaylistUpdated,
+  onPublicPlaylistUpdated,
+  onLocalPlaylistDeleted,
+  onPublicPlaylistDeleted,
   songs,
   playlistToEdit,
 }: CreatePlaylistDialogProps) {
   const { toast } = useToast();
   const [playlistName, setPlaylistName] = React.useState('');
   const [selectedSongs, setSelectedSongs] = React.useState<Song[]>([]);
+  const [isPublic, setIsPublic] = React.useState(false);
   const dragItem = React.useRef<number | null>(null);
   const dragOverItem = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     if (playlistToEdit) {
       setPlaylistName(playlistToEdit.name);
+      setIsPublic(playlistToEdit.isPublic);
       const playlistSongs = playlistToEdit.songIds
         .map(id => songs.find(s => s.id === id))
         .filter(Boolean) as Song[];
       setSelectedSongs(playlistSongs);
     } else {
       setPlaylistName('');
+      setIsPublic(false);
       setSelectedSongs([]);
     }
   }, [playlistToEdit, songs, open]);
@@ -107,29 +120,47 @@ export function CreatePlaylistDialog({
     const songIds = selectedSongs.map(s => s.id).filter(Boolean) as number[];
 
     try {
-      if (playlistToEdit) {
-        const updatedPlaylist: Playlist = {
-          ...playlistToEdit,
-          name: playlistName,
-          songIds: songIds,
-        };
-        onPlaylistUpdated(updatedPlaylist);
-        toast({
-          title: 'Playlist Updated',
-          description: `"${playlistName}" has been updated.`,
-        });
-      } else {
-        const newPlaylist: Omit<Playlist, 'id'> = {
-          name: playlistName,
-          songIds: songIds,
-        };
-        onPlaylistCreated(newPlaylist);
-        toast({
-          title: 'Playlist Created',
-          description: `"${playlistName}" has been added.`,
-        });
-      }
-      onOpenChange(false);
+        if (playlistToEdit) {
+            // Logic for updating an existing playlist
+            const wasPublic = playlistToEdit.isPublic;
+            
+            // If privacy changed, delete from old location
+            if (wasPublic && !isPublic) { // Was public, now private
+                onPublicPlaylistDeleted(playlistToEdit.id as string);
+                const newLocalPlaylist: Omit<PlaylistDB, 'id'> = { name: playlistName, songIds };
+                onLocalPlaylistCreated(newLocalPlaylist);
+            } else if (!wasPublic && isPublic) { // Was private, now public
+                onLocalPlaylistDeleted(playlistToEdit.id as number);
+                const newPublicPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds };
+                onPublicPlaylistCreated(newPublicPlaylist);
+            } else { // Privacy not changed, just update
+                if (isPublic) {
+                    const updatedPlaylist: Playlist = { ...playlistToEdit, id: playlistToEdit.id as string, name: playlistName, songIds, isPublic: true };
+                    onPublicPlaylistUpdated(updatedPlaylist);
+                } else {
+                    const updatedPlaylist: PlaylistDB = { id: playlistToEdit.id as number, name: playlistName, songIds };
+                    onLocalPlaylistUpdated(updatedPlaylist);
+                }
+            }
+            toast({
+                title: 'Playlist Updated',
+                description: `"${playlistName}" has been updated.`,
+            });
+        } else {
+            // Logic for creating a new playlist
+            if (isPublic) {
+                const newPlaylist: Omit<Playlist, 'id' | 'isPublic'> = { name: playlistName, songIds };
+                onPublicPlaylistCreated(newPlaylist);
+            } else {
+                const newPlaylist: Omit<PlaylistDB, 'id'> = { name: playlistName, songIds };
+                onLocalPlaylistCreated(newPlaylist);
+            }
+            toast({
+                title: 'Playlist Created',
+                description: `"${playlistName}" has been added.`,
+            });
+        }
+        onOpenChange(false);
     } catch (error) {
       console.error('Failed to save playlist:', error);
       toast({
@@ -157,15 +188,23 @@ export function CreatePlaylistDialog({
         <div className="grid md:grid-cols-2 gap-6 overflow-y-auto py-4">
           {/* Left Side: All Songs */}
           <div className="flex flex-col gap-4">
-            <Label htmlFor="playlist-name">Playlist Name</Label>
-            <Input
-                id="playlist-name"
-                placeholder="My Awesome Mix"
-                value={playlistName}
-                onChange={(e) => setPlaylistName(e.target.value)}
-            />
+            <div className='space-y-2'>
+              <Label htmlFor="playlist-name">Playlist Name</Label>
+              <Input
+                  id="playlist-name"
+                  placeholder="My Awesome Mix"
+                  value={playlistName}
+                  onChange={(e) => setPlaylistName(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+                <Switch id="public-switch" checked={isPublic} onCheckedChange={setIsPublic} />
+                <Label htmlFor="public-switch" className="flex items-center gap-2 cursor-pointer">
+                    {isPublic ? <><Globe className="h-4 w-4" /> Public (Shared)</> : <><Lock className="h-4 w-4" /> Private (This browser only)</>}
+                </Label>
+            </div>
             <h3 className="font-semibold mt-4">Available Songs</h3>
-            <ScrollArea className="h-96 rounded-md border">
+            <ScrollArea className="h-80 rounded-md border">
               <div className="p-4">
                 {songsNotInPlaylist.length > 0 ? (
                     songsNotInPlaylist.map((song) => (
@@ -195,7 +234,7 @@ export function CreatePlaylistDialog({
 
           {/* Right Side: Selected Songs */}
           <div className="flex flex-col gap-4">
-            <h3 className="font-semibold md:mt-[52px]">Selected Songs ({selectedSongs.length})</h3>
+            <h3 className="font-semibold md:mt-[92px]">Selected Songs ({selectedSongs.length})</h3>
              <ScrollArea className="h-96 rounded-md border">
               <div className="p-4 space-y-2">
                  {selectedSongs.length > 0 ? (

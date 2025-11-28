@@ -33,20 +33,26 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertical } from 'lucide-react';
+import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertical, Globe, Lock } from 'lucide-react';
 import type { Playlist, Song } from '@/lib/types';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import type { PlaylistDB } from '@/lib/db';
+import { Badge } from './ui/badge';
+
 
 interface YourPlaylistsProps {
   playlists: Playlist[];
   songs: Song[];
   onPlaySong: (song: Song, playlist: Playlist) => void;
-  onPlaylistCreated: (playlist: Omit<Playlist, 'id'>) => void;
-  onPlaylistUpdated: (playlist: Playlist) => void;
-  onPlaylistDeleted: (playlistId: string) => void;
+  onLocalPlaylistCreated: (playlist: Omit<PlaylistDB, 'id'>) => void;
+  onPublicPlaylistCreated: (playlist: Omit<Playlist, 'id' | 'isPublic'>) => void;
+  onLocalPlaylistUpdated: (playlist: PlaylistDB) => void;
+  onPublicPlaylistUpdated: (playlist: Playlist) => void;
+  onLocalPlaylistDeleted: (playlistId: number) => void;
+  onPublicPlaylistDeleted: (playlistId: string) => void;
   isLoading: boolean;
 }
 
@@ -54,9 +60,12 @@ export function YourPlaylists({
   playlists,
   songs,
   onPlaySong,
-  onPlaylistCreated,
-  onPlaylistUpdated,
-  onPlaylistDeleted,
+  onLocalPlaylistCreated,
+  onPublicPlaylistCreated,
+  onLocalPlaylistUpdated,
+  onPublicPlaylistUpdated,
+  onLocalPlaylistDeleted,
+  onPublicPlaylistDeleted,
   isLoading,
 }: YourPlaylistsProps) {
   const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
@@ -98,9 +107,14 @@ export function YourPlaylists({
     if (!selectedPlaylist) return;
 
     const newSongIds = reorderedSongs.map(s => s.id!).filter(Boolean) as number[];
-    const updatedPlaylist: Playlist = { ...selectedPlaylist, songIds: newSongIds };
     
-    onPlaylistUpdated(updatedPlaylist);
+    if (selectedPlaylist.isPublic) {
+        const updatedPlaylist: Playlist = { ...selectedPlaylist, songIds: newSongIds };
+        onPublicPlaylistUpdated(updatedPlaylist);
+    } else {
+        const updatedPlaylist: PlaylistDB = { id: selectedPlaylist.id as number, name: selectedPlaylist.name, songIds: newSongIds };
+        onLocalPlaylistUpdated(updatedPlaylist);
+    }
   };
 
   const handleDrop = () => {
@@ -125,7 +139,11 @@ export function YourPlaylists({
   const handleDeleteConfirm = async () => {
     if (!playlistToDelete || !playlistToDelete.id) return;
     try {
-        onPlaylistDeleted(playlistToDelete.id);
+        if (playlistToDelete.isPublic) {
+            onPublicPlaylistDeleted(playlistToDelete.id as string);
+        } else {
+            onLocalPlaylistDeleted(playlistToDelete.id as number);
+        }
         toast({
             title: "Playlist Deleted",
             description: `"${playlistToDelete.name}" has been deleted.`
@@ -183,6 +201,12 @@ export function YourPlaylists({
                       <div className="flex items-center gap-3">
                         <ListMusic className="h-5 w-5 text-muted-foreground" />
                         <span className="font-medium">{playlist.name}</span>
+                        <Badge variant={playlist.isPublic ? 'outline' : 'secondary'}>
+                          {playlist.isPublic 
+                            ? <><Globe className="mr-1 h-3 w-3" />Public</>
+                            : <><Lock className="mr-1 h-3 w-3" />Private</>
+                          }
+                        </Badge>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -216,7 +240,15 @@ export function YourPlaylists({
             <CardHeader>
                 {selectedPlaylist ? (
                     <>
-                        <CardTitle>{selectedPlaylist.name}</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            {selectedPlaylist.name}
+                            <Badge variant={selectedPlaylist.isPublic ? 'outline' : 'secondary'}>
+                              {selectedPlaylist.isPublic 
+                                ? <><Globe className="mr-1 h-3 w-3" />Public</>
+                                : <><Lock className="mr-1 h-3 w-3" />Private</>
+                              }
+                            </Badge>
+                        </CardTitle>
                         <CardDescription>
                             {playlistSongs.length} songs
                         </CardDescription>
@@ -290,8 +322,12 @@ export function YourPlaylists({
       <CreatePlaylistDialog
         open={isCreateDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onPlaylistCreated={onPlaylistCreated}
-        onPlaylistUpdated={onPlaylistUpdated}
+        onLocalPlaylistCreated={onLocalPlaylistCreated}
+        onPublicPlaylistCreated={onPublicPlaylistCreated}
+        onLocalPlaylistUpdated={onLocalPlaylistUpdated}
+        onPublicPlaylistUpdated={onPublicPlaylistUpdated}
+        onLocalPlaylistDeleted={onLocalPlaylistDeleted}
+        onPublicPlaylistDeleted={onPublicPlaylistDeleted}
         songs={songs}
         playlistToEdit={playlistToEdit}
       />

@@ -16,6 +16,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
+import type { PlaylistDB } from '@/lib/db';
 
 function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [songs, setSongs] = React.useState<Song[]>([]);
@@ -28,10 +29,17 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
   const [isDbLoading, setIsDbLoading] = React.useState(true);
-
+  const [localPlaylists, setLocalPlaylists] = React.useState<Playlist[]>([]);
+  
   const firestore = useFirestore();
   const playlistsCollectionRef = useMemoFirebase(() => collection(firestore, 'playlists'), [firestore]);
-  const { data: playlists, isLoading: isPlaylistsLoading } = useCollection<Playlist>(playlistsCollectionRef);
+  const { data: publicPlaylists, isLoading: isPlaylistsLoading } = useCollection<Omit<Playlist, 'id' | 'isPublic'>>(playlistsCollectionRef);
+
+  const combinedPlaylists = React.useMemo(() => {
+    const firestorePlaylists: Playlist[] = publicPlaylists ? publicPlaylists.map(p => ({ ...p, isPublic: true })) : [];
+    return [...localPlaylists, ...firestorePlaylists].sort((a, b) => a.name.localeCompare(b.name));
+  }, [localPlaylists, publicPlaylists]);
+
 
   React.useEffect(() => {
     async function loadData() {
@@ -41,6 +49,7 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         const dbSongs = await db.songs.toArray();
         const songsWithUrls = dbSongs.map(s => ({
           ...s,
+          id: s.id!,
           fileUrl: URL.createObjectURL(s.file)
         }));
 
@@ -48,6 +57,9 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
         
         setSongs(uniqueSongs);
+
+        const dbPlaylists = await db.playlists.toArray();
+        setLocalPlaylists(dbPlaylists.map(p => ({ ...p, id: p.id!, isPublic: false })));
 
         if (uniqueSongs.length > 0 && !currentSong) {
           setCurrentSong(uniqueSongs[0]);
@@ -83,19 +95,34 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
     };
   }, [isPlaying]);
 
-  const handlePlaylistCreated = (newPlaylist: Omit<Playlist, 'id'>) => {
+  const handleLocalPlaylistCreated = async (newPlaylist: Omit<PlaylistDB, 'id'>) => {
+    const id = await db.playlists.add(newPlaylist);
+    setLocalPlaylists(prev => [...prev, { ...newPlaylist, id, isPublic: false }]);
+  };
+
+  const handlePublicPlaylistCreated = (newPlaylist: Omit<Playlist, 'id' | 'isPublic'>) => {
     if (!playlistsCollectionRef) return;
     addDocumentNonBlocking(playlistsCollectionRef, newPlaylist);
   };
+  
+  const handleLocalPlaylistUpdated = async (updatedPlaylist: PlaylistDB) => {
+    await db.playlists.update(updatedPlaylist.id!, updatedPlaylist);
+    setLocalPlaylists(prev => prev.map(p => p.id === updatedPlaylist.id ? { ...updatedPlaylist, id: updatedPlaylist.id!, isPublic: false } : p));
+  };
 
-  const handlePlaylistUpdated = (updatedPlaylist: Playlist) => {
-     if (!firestore || !updatedPlaylist.id) return;
+  const handlePublicPlaylistUpdated = (updatedPlaylist: Playlist) => {
+     if (!firestore || !updatedPlaylist.id || typeof updatedPlaylist.id !== 'string') return;
      const playlistDocRef = doc(firestore, 'playlists', updatedPlaylist.id);
-     const { id, ...playlistData } = updatedPlaylist;
+     const { id, isPublic, ...playlistData } = updatedPlaylist;
      updateDocumentNonBlocking(playlistDocRef, playlistData);
   };
   
-  const handlePlaylistDeleted = (playlistId: string) => {
+  const handleLocalPlaylistDeleted = async (playlistId: number) => {
+    await db.playlists.delete(playlistId);
+    setLocalPlaylists(prev => prev.filter(p => p.id !== playlistId));
+  };
+  
+  const handlePublicPlaylistDeleted = (playlistId: string) => {
     if (!firestore) return;
     const playlistDocRef = doc(firestore, 'playlists', playlistId);
     deleteDocumentNonBlocking(playlistDocRef);
@@ -139,7 +166,7 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
       return;
     }
     
-    const songPool = activePlaylist && playlists
+    const songPool = activePlaylist
       ? (activePlaylist.songIds
           .map(id => songs.find(s => s.id === id))
           .filter(Boolean) as Song[])
@@ -166,7 +193,7 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         return;
     }
     
-    const songPool = activePlaylist && playlists
+    const songPool = activePlaylist
       ? (activePlaylist.songIds
           .map(id => songs.find(s => s.id === id))
           .filter(Boolean) as Song[])
@@ -216,13 +243,16 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} isLoading={isDbLoading} />
           <YourPlaylists
-            playlists={playlists || []}
+            playlists={combinedPlaylists}
             songs={songs}
             onPlaySong={handlePlaySong}
-            onPlaylistCreated={handlePlaylistCreated}
-            onPlaylistUpdated={handlePlaylistUpdated}
-            onPlaylistDeleted={handlePlaylistDeleted}
-            isLoading={isPlaylistsLoading}
+            onLocalPlaylistCreated={handleLocalPlaylistCreated}
+            onPublicPlaylistCreated={handlePublicPlaylistCreated}
+            onLocalPlaylistUpdated={handleLocalPlaylistUpdated}
+            onPublicPlaylistUpdated={handlePublicPlaylistUpdated}
+            onLocalPlaylistDeleted={handleLocalPlaylistDeleted}
+            onPublicPlaylistDeleted={handlePublicPlaylistDeleted}
+            isLoading={isPlaylistsLoading || isDbLoading}
           />
           <DashboardStats 
             songs={songs}

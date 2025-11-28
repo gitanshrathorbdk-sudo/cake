@@ -9,21 +9,26 @@ export type SongDB = {
   file: File;
 }
 
-// Playlist is no longer stored in Dexie
-// export type Playlist = {
-//   id?: number;
-//   name: string;
-//   songIds: number[];
-// };
+export type PlaylistDB = {
+  id?: number;
+  name: string;
+  songIds: number[];
+};
 
 export class HarmonicaDB extends Dexie {
   songs!: Table<SongDB>; 
-  // playlists!: Table<Playlist>; // Playlists are now in Firestore
+  playlists!: Table<PlaylistDB>;
 
   constructor() {
     super('harmonicaDB');
     
-    // Version 3: Remove playlists table
+    // Version 4: Re-introduce playlists table for private playlists
+    this.version(4).stores({
+      songs: '++id, title, artist',
+      playlists: '++id, name'
+    });
+    
+    // Version 3: Removed playlists table
     this.version(3).stores({
       songs: '++id, title, artist'
     }).upgrade(tx => {
@@ -31,10 +36,9 @@ export class HarmonicaDB extends Dexie {
       return tx.table('songs').count();
     });
 
-    // Version 2: Added playlists table
+    // Version 2: Added playlists table (existed in this version)
     this.version(2).stores({
       songs: '++id, title, artist',
-      // Playlists table existed in this version
       playlists: '++id, name' 
     });
 

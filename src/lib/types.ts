@@ -8,7 +8,8 @@ export type Song = {
 };
 
 export type Playlist = {
-    id?: string;
+    id: string | number; // Firestore uses string, Dexie uses number
     name: string;
     songIds: number[];
+    isPublic: boolean; // To distinguish between public (Firestore) and private (Dexie)
 };
