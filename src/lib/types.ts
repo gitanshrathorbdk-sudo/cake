@@ -8,7 +8,7 @@ export type Song = {
 };
 
 export type Playlist = {
-    id?: number;
+    id?: string;
     name: string;
     songIds: number[];
 };

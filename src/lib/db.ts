@@ -1,8 +1,6 @@
 import Dexie, { type Table } from 'dexie';
-import type { Playlist } from './types';
 
-// This type represents the structure stored in IndexedDB.
-// It should only contain data that can be persisted.
+// This type represents the structure stored in IndexedDB for songs.
 export type SongDB = {
   id?: number;
   title: string;
@@ -11,22 +9,36 @@ export type SongDB = {
   file: File;
 }
 
+// Playlist is no longer stored in Dexie
+// export type Playlist = {
+//   id?: number;
+//   name: string;
+//   songIds: number[];
+// };
+
 export class HarmonicaDB extends Dexie {
   songs!: Table<SongDB>; 
-  playlists!: Table<Playlist>;
+  // playlists!: Table<Playlist>; // Playlists are now in Firestore
 
   constructor() {
     super('harmonicaDB');
-    this.version(2).stores({
-      songs: '++id, title, artist',
-      playlists: '++id, name'
+    
+    // Version 3: Remove playlists table
+    this.version(3).stores({
+      songs: '++id, title, artist'
     }).upgrade(tx => {
-      // This is to satisfy the linter if no changes are made to schema.
-      // If you are changing schema, you'd perform upgrade operations here.
-      return tx.table('playlists').count();
+       // Dexie automatically handles table removal, this is for explicit migration tasks if any
+      return tx.table('songs').count();
     });
 
-    // Handle initial schema creation for users who have version 1
+    // Version 2: Added playlists table
+    this.version(2).stores({
+      songs: '++id, title, artist',
+      // Playlists table existed in this version
+      playlists: '++id, name' 
+    });
+
+    // Version 1: Initial schema
     this.version(1).stores({
         songs: '++id, title, artist'
     });

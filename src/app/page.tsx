@@ -12,13 +12,13 @@ import defaultSongsData from '@/lib/default-songs.json';
 import { YourPlaylists } from '@/components/your-playlists';
 import { SetNextMusicDialog } from '@/components/set-next-music-dialog';
 import { LoginPage } from '@/components/login-page';
-
-// 4 hours in milliseconds
-const SESSION_DURATION = 4 * 60 * 60 * 1000; 
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Loader2 } from 'lucide-react';
 
 function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [songs, setSongs] = React.useState<Song[]>([]);
-  const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [isSetNextMusicDialogOpen, setSetNextMusicDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
@@ -28,6 +28,10 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [isRepeat, setIsRepeat] = React.useState(false);
   const [timeListenedInSeconds, setTimeListenedInSeconds] = React.useState(0);
   const [isDbLoading, setIsDbLoading] = React.useState(true);
+
+  const firestore = useFirestore();
+  const playlistsCollectionRef = useMemoFirebase(() => collection(firestore, 'playlists'), [firestore]);
+  const { data: playlists, isLoading: isPlaylistsLoading } = useCollection<Playlist>(playlistsCollectionRef);
 
   React.useEffect(() => {
     async function loadData() {
@@ -44,9 +48,6 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         const uniqueSongs = Array.from(new Map(combinedSongs.map(s => [s.title + s.artist, s])).values());
         
         setSongs(uniqueSongs);
-
-        const dbPlaylists = await db.playlists.toArray();
-        setPlaylists(dbPlaylists);
 
         if (uniqueSongs.length > 0 && !currentSong) {
           setCurrentSong(uniqueSongs[0]);
@@ -82,16 +83,22 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
     };
   }, [isPlaying]);
 
-  const handlePlaylistCreated = (newPlaylist: Playlist) => {
-    setPlaylists(prev => [...prev, newPlaylist]);
+  const handlePlaylistCreated = (newPlaylist: Omit<Playlist, 'id'>) => {
+    if (!playlistsCollectionRef) return;
+    addDocumentNonBlocking(playlistsCollectionRef, newPlaylist);
   };
 
   const handlePlaylistUpdated = (updatedPlaylist: Playlist) => {
-    setPlaylists(prev => prev.map(p => p.id === updatedPlaylist.id ? updatedPlaylist : p));
+     if (!firestore || !updatedPlaylist.id) return;
+     const playlistDocRef = doc(firestore, 'playlists', updatedPlaylist.id);
+     const { id, ...playlistData } = updatedPlaylist;
+     updateDocumentNonBlocking(playlistDocRef, playlistData);
   };
   
-  const handlePlaylistDeleted = (playlistId: number) => {
-    setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+  const handlePlaylistDeleted = (playlistId: string) => {
+    if (!firestore) return;
+    const playlistDocRef = doc(firestore, 'playlists', playlistId);
+    deleteDocumentNonBlocking(playlistDocRef);
   };
 
   const handleSongsAdded = (newSongs: Song[]) => {
@@ -132,8 +139,10 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
       return;
     }
     
-    const songPool = activePlaylist 
-      ? activePlaylist.songIds.map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[] 
+    const songPool = activePlaylist && playlists
+      ? (activePlaylist.songIds
+          .map(id => songs.find(s => s.id === id))
+          .filter(Boolean) as Song[])
       : songs;
       
     if (songPool.length === 0) return;
@@ -157,9 +166,10 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         return;
     }
     
-    // Backward logic
-    const songPool = activePlaylist 
-      ? activePlaylist.songIds.map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[] 
+    const songPool = activePlaylist && playlists
+      ? (activePlaylist.songIds
+          .map(id => songs.find(s => s.id === id))
+          .filter(Boolean) as Song[])
       : songs;
       
     if (songPool.length === 0) return;
@@ -206,13 +216,13 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} isLoading={isDbLoading} />
           <YourPlaylists
-            playlists={playlists}
+            playlists={playlists || []}
             songs={songs}
             onPlaySong={handlePlaySong}
             onPlaylistCreated={handlePlaylistCreated}
             onPlaylistUpdated={handlePlaylistUpdated}
             onPlaylistDeleted={handlePlaylistDeleted}
-            isLoading={isDbLoading}
+            isLoading={isPlaylistsLoading}
           />
           <DashboardStats 
             songs={songs}
@@ -238,48 +248,25 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
 
 
 export default function AuthGate() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { user, isUserLoading } = useUser();
+  const auth = React.useContext(require('@/firebase').FirebaseContext)?.auth;
 
-  React.useEffect(() => {
-    try {
-      const sessionString = localStorage.getItem('harmonica_session');
-      if (sessionString) {
-        const session = JSON.parse(sessionString);
-        const now = new Date().getTime();
-        if (now - session.startTime < SESSION_DURATION) {
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem('harmonica_session');
-        }
-      }
-    } catch (e) {
-      // If parsing fails, treat as unauthenticated
-      localStorage.removeItem('harmonica_session');
-    }
-    setIsLoading(false);
-  }, []);
 
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
-  
   const handleLogout = () => {
-    localStorage.removeItem('harmonica_session');
-    setIsAuthenticated(false);
+    auth?.signOut();
   }
 
-  if (isLoading) {
-    // You can replace this with a proper loading spinner component
+  if (isUserLoading) {
     return (
         <div className="flex h-svh w-full items-center justify-center bg-background">
-            <p className="text-lg text-muted-foreground">Loading...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-lg text-muted-foreground ml-4">Loading...</p>
         </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  if (!user) {
+    return <LoginPage />;
   }
 
   return <HarmonicaApp onLogout={handleLogout} />;

@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import type { Song, Playlist } from '@/lib/types';
-import { db } from '@/lib/db';
 import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
 import { GripVertical, Music, Trash2 } from 'lucide-react';
@@ -22,7 +21,7 @@ import { GripVertical, Music, Trash2 } from 'lucide-react';
 interface CreatePlaylistDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPlaylistCreated: (playlist: Playlist) => void;
+  onPlaylistCreated: (playlist: Omit<Playlist, 'id'>) => void;
   onPlaylistUpdated: (playlist: Playlist) => void;
   songs: Song[];
   playlistToEdit?: Playlist | null;
@@ -114,26 +113,20 @@ export function CreatePlaylistDialog({
           name: playlistName,
           songIds: songIds,
         };
-        await db.playlists.update(playlistToEdit.id!, {
-          name: playlistName,
-          songIds: songIds,
-        });
         onPlaylistUpdated(updatedPlaylist);
         toast({
           title: 'Playlist Updated',
           description: `"${playlistName}" has been updated.`,
         });
       } else {
-        const newPlaylist: Playlist = {
+        const newPlaylist: Omit<Playlist, 'id'> = {
           name: playlistName,
           songIds: songIds,
         };
-        const id = await db.playlists.add(newPlaylist);
-        newPlaylist.id = id;
         onPlaylistCreated(newPlaylist);
         toast({
           title: 'Playlist Created',
-          description: `"${playlistName}" has been added to your playlists.`,
+          description: `"${playlistName}" has been added.`,
         });
       }
       onOpenChange(false);

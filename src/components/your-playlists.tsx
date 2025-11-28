@@ -37,7 +37,6 @@ import { MoreHorizontal, Music, Play, Plus, ListMusic, Trash2, Edit, GripVertica
 import type { Playlist, Song } from '@/lib/types';
 import { CreatePlaylistDialog } from './create-playlist-dialog';
 import { ScrollArea } from './ui/scroll-area';
-import { db } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 
@@ -45,9 +44,9 @@ interface YourPlaylistsProps {
   playlists: Playlist[];
   songs: Song[];
   onPlaySong: (song: Song, playlist: Playlist) => void;
-  onPlaylistCreated: (playlist: Playlist) => void;
+  onPlaylistCreated: (playlist: Omit<Playlist, 'id'>) => void;
   onPlaylistUpdated: (playlist: Playlist) => void;
-  onPlaylistDeleted: (playlistId: number) => void;
+  onPlaylistDeleted: (playlistId: string) => void;
   isLoading: boolean;
 }
 
@@ -70,6 +69,13 @@ export function YourPlaylists({
   const { toast } = useToast();
 
   React.useEffect(() => {
+    // If the currently selected playlist is deleted from outside, deselect it.
+    if (selectedPlaylist && !playlists.find(p => p.id === selectedPlaylist.id)) {
+      setSelectedPlaylist(null);
+    }
+  }, [playlists, selectedPlaylist]);
+
+  React.useEffect(() => {
     if (selectedPlaylist) {
       const songsInPlaylist = selectedPlaylist.songIds
         .map(id => songs.find(song => song.id === id))
@@ -88,32 +94,16 @@ export function YourPlaylists({
     dragOverItem.current = position;
   };
 
-  const handleSongReordered = async (reorderedSongs: Song[]) => {
+  const handleSongReordered = (reorderedSongs: Song[]) => {
     if (!selectedPlaylist) return;
 
     const newSongIds = reorderedSongs.map(s => s.id!).filter(Boolean) as number[];
-    const updatedPlaylist = { ...selectedPlaylist, songIds: newSongIds };
+    const updatedPlaylist: Playlist = { ...selectedPlaylist, songIds: newSongIds };
+    
+    onPlaylistUpdated(updatedPlaylist);
+  };
 
-    try {
-        await db.playlists.update(selectedPlaylist.id!, { songIds: newSongIds });
-        onPlaylistUpdated(updatedPlaylist);
-        // We update the local state optimistically, so a success toast might be too noisy.
-        // A failure toast is more important.
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Database Error",
-            description: "Could not save the new song order.",
-        });
-        // Revert UI change if DB update fails by re-fetching from original props
-        const originalSongs = selectedPlaylist.songIds
-          .map(id => songs.find(song => song.id === id))
-          .filter(Boolean) as Song[];
-        setPlaylistSongs(originalSongs);
-    }
-};
-
-  const handleDrop = async () => {
+  const handleDrop = () => {
     if (dragItem.current !== null && dragOverItem.current !== null && selectedPlaylist) {
       const newPlaylistSongs = [...playlistSongs];
       const dragItemContent = newPlaylistSongs[dragItem.current];
@@ -122,11 +112,8 @@ export function YourPlaylists({
       dragItem.current = null;
       dragOverItem.current = null;
       
-      // Update UI optimistically
       setPlaylistSongs(newPlaylistSongs);
-      
-      // Persist the changes
-      await handleSongReordered(newPlaylistSongs);
+      handleSongReordered(newPlaylistSongs);
     }
   };
 
@@ -138,7 +125,6 @@ export function YourPlaylists({
   const handleDeleteConfirm = async () => {
     if (!playlistToDelete || !playlistToDelete.id) return;
     try {
-        await db.playlists.delete(playlistToDelete.id);
         onPlaylistDeleted(playlistToDelete.id);
         toast({
             title: "Playlist Deleted",
