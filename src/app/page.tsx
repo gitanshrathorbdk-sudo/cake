@@ -5,17 +5,15 @@ import { Header } from '@/components/header';
 import { MusicControlBar } from '@/components/music-control-bar';
 import { YourMusic } from '@/components/your-music';
 import { DashboardStats } from '@/components/dashboard-stats';
-import type { Playlist, Song, SharedSong } from '@/lib/types';
+import type { Playlist, Song } from '@/lib/types';
 import { UploadMusicDialog } from '@/components/upload-music-dialog';
 import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
 import { YourPlaylists } from '@/components/your-playlists';
-import { ShareSong } from '@/components/share-song';
 
 export default function Home() {
   const [songs, setSongs] = React.useState<Song[]>([]);
   const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
-  const [sharedSongs, setSharedSongs] = React.useState<SharedSong[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [currentSong, setCurrentSong] = React.useState<Song | null>(null);
   const [activePlaylist, setActivePlaylist] = React.useState<Playlist | null>(null);
@@ -143,10 +141,6 @@ export default function Home() {
   const handleToggleRepeat = () => {
     setIsRepeat(prev => !prev);
   };
-  
-  const handleSongShared = (newSharedSong: SharedSong) => {
-    setSharedSongs(prev => [...prev, newSharedSong]);
-  };
 
   return (
     <div className="flex h-svh w-full flex-col bg-background text-foreground">
@@ -159,7 +153,6 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto space-y-8 px-4 py-8 md:px-6 lg:space-y-12 lg:py-12">
           <YourMusic songs={songs} onPlaySong={handlePlaySong} isLoading={isDbLoading} />
-          <ShareSong onSongShared={handleSongShared} sharedSongs={sharedSongs} />
           <YourPlaylists
             playlists={playlists}
             songs={songs}

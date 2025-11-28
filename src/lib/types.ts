@@ -12,9 +12,3 @@ export type Playlist = {
     name: string;
     songIds: number[];
 };
-
-export type SharedSong = {
-  name: string;
-  email: string;
-  songName: string;
-};
