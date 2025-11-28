@@ -1,0 +1,133 @@
+/**
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. All data is considered
+ * private and is nested within a user-specific document tree. Access is
+ * granted only to the authenticated owner of that data, ensuring strong
+ * isolation between users.
+ *
+ * Data Structure:
+ * All application data is organized under the `/users/{userId}` collection.
+ * Each user's songs and playlists are stored in subcollections within their
+ * own user document, for example:
+ * - /users/{userId} (User Profile)
+ * - /users/{userId}/songs/{songId} (User's Songs)
+ * - /users/{userId}/playlists/{playlistId} (User's Playlists)
+ *
+ * Key Security Decisions:
+ * - Strict Ownership: A user can only access documents within their own
+ *   `/users/{userId}` path. There is no concept of shared or public data.
+ * - No User Listing: To protect user privacy, it is forbidden to query the
+ *   top-level `/users` collection.
+ * - Path-Based Security: Authorization relies solely on matching the user's
+ *   authenticated UID with the `{userId}` wildcard in the document path. This
+ *   avoids costly and complex cross-document reads (`get()` calls).
+ * - Prototyping Flexibility: These rules do not validate the specific shape
+ *   or data types of documents beyond fields critical for maintaining
+ *   relational integrity (e.g., ensuring a document's `id` field matches
+ *   its document ID on creation). This allows the application schema to
+ *   evolve rapidly without requiring rule changes.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing user ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Combines an ownership check with a check to ensure the document
+     * already exists. This is critical for all update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * On create, validates that the incoming document's 'id' field matches
+     * its document ID in the path. Enforces relational integrity.
+     */
+    function incomingDataMatchesDocId(docId) {
+      return request.resource.data.id == docId;
+    }
+
+    /**
+     * On update, ensures that the 'id' field of a document cannot be changed.
+     * This prevents re-linking or re-assigning core documents.
+     */
+    function idIsImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user reads their own profile. auth.uid: "user_abc", path: /users/user_abc
+     * @allow (create) A new user creates their own profile document. auth.uid: "user_abc", path: /users/user_abc
+     * @deny (list) A user tries to list all other users in the system.
+     * @deny (update) A user tries to update another user's profile. auth.uid: "user_xyz", path: /users/user_abc
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && incomingDataMatchesDocId(userId);
+      allow update: if isExistingOwner(userId) && idIsImmutable();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages a user's private song library.
+       * @path /users/{userId}/songs/{songId}
+       * @allow (list) An authenticated user lists their own songs. auth.uid: "user_abc", path: /users/user_abc/songs
+       * @allow (create) An authenticated user adds a new song to their library. auth.uid: "user_abc", path: /users/user_abc/songs/song_123
+       * @deny (get) A user tries to read a song from another user's library. auth.uid: "user_xyz", path: /users/user_abc/songs/song_123
+       * @deny (delete) A user tries to delete a song from another user's library. auth.uid: "user_xyz", path: /users/user_abc/songs/song_123
+       * @principle Enforces strict ownership for a user's private subcollections.
+       */
+      match /songs/{songId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && incomingDataMatchesDocId(songId);
+        allow update: if isExistingOwner(userId) && idIsImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages a user's private playlists.
+       * @path /users/{userId}/playlists/{playlistId}
+       * @allow (list) An authenticated user lists their own playlists. auth.uid: "user_abc", path: /users/user_abc/playlists
+       * @allow (create) An authenticated user creates a new playlist. auth.uid: "user_abc", path: /users/user_abc/playlists/playlist_123
+       * @deny (get) A user tries to read a playlist from another user's account. auth.uid: "user_xyz", path: /users/user_abc/playlists/playlist_123
+       * @deny (update) A user tries to modify another user's playlist. auth.uid: "user_xyz", path: /users/user_abc/playlists/playlist_123
+       * @principle Enforces strict ownership for a user's private subcollections.
+       */
+      match /playlists/{playlistId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && incomingDataMatchesDocId(playlistId);
+        allow update: if isExistingOwner(userId) && idIsImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}
