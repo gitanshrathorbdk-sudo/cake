@@ -73,7 +73,7 @@
           "type": "array",
           "description": "References to Songs. (Relationship: Playlist N:N Song)",
           "items": {
-            "type": "string"
+            "type": "number"
           }
         },
         "createdAt": {
@@ -178,18 +178,14 @@
         }
       },
       {
-        "path": "/users/{userId}/playlists/{playlistId}",
+        "path": "/playlists/{playlistId}",
         "definition": {
           "entityName": "playlist",
           "schema": {
             "$ref": "#/backend/entities/Playlist"
           },
-          "description": "Stores playlists created by the user. Owned by the user identified by {userId}.",
+          "description": "Stores playlists that are public to all authenticated users.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
             {
               "name": "playlistId",
               "description": "The unique identifier of the playlist."
@@ -198,6 +194,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure prioritizes authorization independence and simplifies security rules. User-owned data (songs and playlists) are stored under `/users/{userId}`. This path-based ownership ensures clear authorization boundaries.  Songs are stored directly under the user (`/users/{userId}/songs/{songId}`) enabling easy access and management by the user. Playlists are similarly stored (`/users/{userId}/playlists/{playlistId}`). No `get()` calls are needed in security rules because authorization is based solely on the path and `request.auth.uid`.  The structure directly supports listing songs and playlists owned by a user, fulfilling the QAP requirement. Segregation is achieved by keeping user-specific data under their respective `/users/{userId}` collection.  There are no custom claims, and roles would be stored in the database if there were any. Because there is no data shared between users, a membership map is unnecessary."
+    "reasoning": "The Firestore structure prioritizes authorization independence and simplifies security rules. User-owned data (songs and playlists) are stored under `/users/{userId}`. This path-based ownership ensures clear authorization boundaries.  Songs are stored directly under the user (`/users/{userId}/songs/{songId}`) enabling easy access and management by the user. Playlists are now stored in a top-level `/playlists` collection to be public to all authenticated users. No `get()` calls are needed in security rules because authorization is based solely on the path and `request.auth.uid`.  The structure directly supports listing songs owned by a user and public playlists. Segregation is achieved by keeping user-specific data under their respective `/users/{userId}` collection.  There are no custom claims, and roles would be stored in the database if there were any. Because there is no data shared between users, a membership map is unnecessary."
   }
 }
