@@ -195,7 +195,7 @@ export function MusicControlBar({ song, nextSong, isPlaying, isRepeat, onPlayPau
             {nextSong && (
                 <TooltipProvider>
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger asChild>
                              <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-1.5 text-sm">
                                 <ListMusic className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-muted-foreground hidden lg:inline">Next:</span>
