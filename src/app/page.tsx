@@ -11,8 +11,12 @@ import { db } from '@/lib/db';
 import defaultSongsData from '@/lib/default-songs.json';
 import { YourPlaylists } from '@/components/your-playlists';
 import { SetNextMusicDialog } from '@/components/set-next-music-dialog';
+import { LoginPage } from '@/components/login-page';
 
-export default function Home() {
+// 4 hours in milliseconds
+const SESSION_DURATION = 4 * 60 * 60 * 1000; 
+
+function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
   const [songs, setSongs] = React.useState<Song[]>([]);
   const [playlists, setPlaylists] = React.useState<Playlist[]>([]);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
@@ -182,10 +186,10 @@ export default function Home() {
   const handleToggleRepeat = () => {
     setIsRepeat(prev => !prev);
   };
-
+  
   return (
     <div className="flex h-svh w-full flex-col bg-background text-foreground">
-      <Header onUploadClick={() => setUploadDialogOpen(true)} />
+      <Header onUploadClick={() => setUploadDialogOpen(true)} onLogout={onLogout} />
       <UploadMusicDialog
         open={isUploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
@@ -230,4 +234,53 @@ export default function Home() {
       />
     </div>
   );
+}
+
+
+export default function AuthGate() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    try {
+      const sessionString = localStorage.getItem('harmonica_session');
+      if (sessionString) {
+        const session = JSON.parse(sessionString);
+        const now = new Date().getTime();
+        if (now - session.startTime < SESSION_DURATION) {
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('harmonica_session');
+        }
+      }
+    } catch (e) {
+      // If parsing fails, treat as unauthenticated
+      localStorage.removeItem('harmonica_session');
+    }
+    setIsLoading(false);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+  
+  const handleLogout = () => {
+    localStorage.removeItem('harmonica_session');
+    setIsAuthenticated(false);
+  }
+
+  if (isLoading) {
+    // You can replace this with a proper loading spinner component
+    return (
+        <div className="flex h-svh w-full items-center justify-center bg-background">
+            <p className="text-lg text-muted-foreground">Loading...</p>
+        </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  return <HarmonicaApp onLogout={handleLogout} />;
 }
