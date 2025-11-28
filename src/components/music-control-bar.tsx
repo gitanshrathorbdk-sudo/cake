@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Slider } from '@/components/ui/slider';
 import type { Song } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Label } from './ui/label';
 
 interface MusicControlBarProps {
     song: Song | null;
@@ -122,7 +123,7 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
         onEnded={handleOnEnded}
         loop={isRepeat}
       />
-      <div className="container mx-auto flex h-24 items-center justify-between gap-4 p-4">
+      <div className="container mx-auto flex h-28 items-center justify-between gap-4 px-4">
         <div className="flex w-1/3 items-center gap-3">
           {song ? (
             <>
@@ -149,6 +150,7 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
         </div>
 
         <div className="flex w-full flex-col items-center justify-center gap-2 md:w-1/3">
+             {isPlaying && <Label className="text-xs font-semibold uppercase tracking-wider text-primary">Music playing</Label>}
             <div className="flex w-full max-w-xs items-center gap-2 text-xs">
                 <span className="w-10 text-right">{formatTime(currentTime)}</span>
                 <Slider
@@ -180,7 +182,15 @@ export function MusicControlBar({ song, isPlaying, isRepeat, onPlayPause, onSkip
             </div>
         </div>
 
-        <div className="flex w-1/3 items-center justify-end">
+        <div className="flex w-1/3 items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onSkip('forward')}
+              disabled={!song}
+            >
+              Set Next Music
+            </Button>
             <Button
               variant="ghost"
               size="icon"
