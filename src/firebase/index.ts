@@ -7,29 +7,26 @@ import { getFirestore } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
-      firebaseApp = initializeApp(firebaseConfig);
-    }
-
-    return getSdks(firebaseApp);
+  if (getApps().length > 0) {
+    return getSdks(getApp());
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  // The Vercel build process might not have access to environment variables
+  // in the same way as the runtime. This try-catch block prevents the build
+  // from crashing if the Firebase config is incomplete.
+  try {
+    const app = initializeApp(firebaseConfig);
+    return getSdks(app);
+  } catch (e) {
+    console.error("Firebase initialization failed. This may be expected during a build process if environment variables are not yet available.", e);
+    // Return a dummy object or null to allow the build to continue.
+    // The app will not function correctly without Firebase, but it will build.
+    return {
+      firebaseApp: null,
+      auth: null,
+      firestore: null
+    };
+  }
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {

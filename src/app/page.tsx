@@ -12,12 +12,13 @@ import defaultSongsData from '@/lib/default-songs.json';
 import { YourPlaylists } from '@/components/your-playlists';
 import { SetNextMusicDialog } from '@/components/set-next-music-dialog';
 import { LoginPage } from '@/components/login-page';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, FirebaseContext } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import type { PlaylistDB } from '@/lib/db';
 import { MakePublicDialog } from '@/components/make-public-dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
@@ -310,9 +311,41 @@ function HarmonicaApp({ onLogout }: { onLogout: () => void }) {
 
 
 export default function AuthGate() {
-  const { user, isUserLoading } = useUser();
-  const auth = React.useContext(require('@/firebase').FirebaseContext)?.auth;
+  const firebaseContext = React.useContext(FirebaseContext);
+  
+  // If the context is not yet available, we can show a generic loading state.
+  if (!firebaseContext) {
+      return (
+          <div className="flex h-svh w-full items-center justify-center bg-background">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-lg text-muted-foreground ml-4">Initializing...</p>
+          </div>
+      );
+  }
 
+  // If the core Firebase services failed to initialize (e.g., missing env vars),
+  // show a helpful error message.
+  if (!firebaseContext.areServicesAvailable) {
+      return (
+          <div className="flex h-svh w-full items-center justify-center bg-background p-4">
+              <Card className="max-w-lg">
+                  <CardHeader className="flex flex-row items-center gap-4">
+                      <AlertTriangle className="h-8 w-8 text-destructive" />
+                      <CardTitle>Firebase Configuration Error</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-card-foreground">
+                      <p>The application could not connect to Firebase. This is usually caused by missing or incorrect environment variables.</p>
+                      <p>Please ensure you have created a <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold">.env</code> file in your project root and that it contains all the required keys from <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold">.env.example</code>.</p>
+                      <p>If you are running this on Vercel, make sure you have set the environment variables in your project settings.</p>
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  }
+
+  // At this point, Firebase services are available, so we can proceed with auth checks.
+  const { user, isUserLoading } = useUser();
+  const auth = firebaseContext.auth;
 
   const handleLogout = () => {
     auth?.signOut();

@@ -8,9 +8,9 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 interface FirebaseProviderProps {
   children: ReactNode;
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
+  firebaseApp: FirebaseApp | null; // Allow null
+  firestore: Firestore | null;   // Allow null
+  auth: Auth | null;             // Allow null
 }
 
 // Internal state for user authentication
@@ -105,7 +105,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
+      {contextValue.areServicesAvailable ? <FirebaseErrorListener /> : null}
       {children}
     </FirebaseContext.Provider>
   );
@@ -123,7 +123,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
   }
 
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
-    throw new Error('Firebase core services not available. Check FirebaseProvider props.');
+    throw new Error('Firebase core services not available. Check FirebaseProvider props and ensure environment variables are set.');
   }
 
   return {
